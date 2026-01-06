@@ -2512,8 +2512,8 @@ const renderWorkoutView = async (sessionId) => {
     const last = await getLastPerformance(item.exerciseId, session.id);
     const pr = await getExercisePR(item.exerciseId, session.id);
     if (last) {
-      const prText = pr ? ` · PR: ${pr.weight} kg (${formatDate(pr.date)})` : '';
-      lastPerformance.textContent = `Ultimo: ${last.summary}${prText}`;
+      const prText = pr ? ` · <strong>PR: ${pr.weight} kg (${formatDate(pr.date)})</strong>` : '';
+      lastPerformance.innerHTML = `Ultimo: ${last.summary}${prText}`;
     } else {
       lastPerformance.textContent = 'Ultimo: sin registros';
     }

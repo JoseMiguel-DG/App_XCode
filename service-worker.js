@@ -5,6 +5,8 @@ const CORE_ASSETS = [
   './styles.css',
   './app.js',
   './manifest.json',
+  './assets/icons/favicon-16.png',
+  './assets/icons/favicon-32.png',
   './assets/brand-mark.svg',
   './assets/hero-workout.svg',
   './assets/icons/icon-192.png',
