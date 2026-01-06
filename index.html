@@ -134,29 +134,89 @@
           <div class="panel__header">
             <div>
               <h2>Inicio</h2>
-              <p class="panel__subtitle">Tu resumen rapido de entrenamiento.</p>
+              <p class="panel__subtitle">Resumen de rendimiento y proxima sesion.</p>
+            </div>
+          </div>
+
+          <div class="metric-grid">
+            <div class="card metric-card">
+              <p class="metric-card__label">Constancia semanal</p>
+              <p class="metric-card__value">4 / 5</p>
+              <div class="progress">
+                <span class="progress__bar" style="width: 80%"></span>
+              </div>
+            </div>
+            <div class="card metric-card">
+              <p class="metric-card__label">Volumen total</p>
+              <p class="metric-card__value">12.4k kg</p>
+              <p class="metric-card__delta">+8% vs semana pasada</p>
+            </div>
+            <div class="card metric-card">
+              <p class="metric-card__label">PRs recientes</p>
+              <p class="metric-card__value">3</p>
+              <p class="metric-card__delta">Pecho +2, Pierna +1</p>
+            </div>
+          </div>
+
+          <div class="card chart-card">
+            <div class="card__row">
+              <div>
+                <p class="card__title">Rendimiento 14 dias</p>
+                <p class="card__text">Carga total por sesion.</p>
+              </div>
+              <span class="pill">Tendencia</span>
+            </div>
+            <div class="sparkline">
+              <svg viewBox="0 0 240 80" aria-hidden="true" focusable="false">
+                <polyline
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="3"
+                  points="5,60 35,52 60,58 90,40 120,45 145,30 170,38 200,22 235,28"
+                />
+              </svg>
+            </div>
+            <div class="chip-row">
+              <span class="chip">Fuerza</span>
+              <span class="chip">Hipertrofia</span>
+              <span class="chip">Tecnica</span>
             </div>
           </div>
 
           <div class="card">
-            <p class="card__title">Objetivo de hoy</p>
-            <p class="card__text">
-              Elige una rutina y prepara tus pesos objetivo antes de empezar.
-            </p>
+            <p class="card__title">Proxima sesion</p>
+            <p class="card__text">Rutina sugerida: Pecho + Hombro.</p>
+            <div class="card__row">
+              <div class="mini-list">
+                <span>Press banca</span>
+                <span>Press militar</span>
+                <span>Aperturas</span>
+              </div>
+              <button class="button button--primary" id="homeGoTrain">Ir a Entrenar</button>
+            </div>
           </div>
 
-          <div class="card">
-            <p class="card__title">Tip del dia</p>
-            <p class="card__text">
-              Prioriza el rango completo y un ritmo controlado para mejorar la tecnica.
-            </p>
-          </div>
+          <details class="card collapsible" open>
+            <summary class="collapsible__summary">Insights de esta semana</summary>
+            <div class="collapsible__content">
+              <ul class="mini-list">
+                <li>Mejoras en rango de movimiento (+12%).</li>
+                <li>Fatiga controlada en pierna (RIR medio 2.3).</li>
+                <li>Recomendacion: sube 2.5kg en press banca.</li>
+              </ul>
+            </div>
+          </details>
 
-          <div class="card">
-            <p class="card__title">Atajo</p>
-            <p class="card__text">Ve directo a Entrenar y retoma tu ultima sesion.</p>
-            <button class="button button--primary" id="homeGoTrain">Ir a Entrenar</button>
-          </div>
+          <details class="card collapsible">
+            <summary class="collapsible__summary">Tips rapidos</summary>
+            <div class="collapsible__content">
+              <ul class="mini-list">
+                <li>Calienta con series ligeras y movimientos especificos.</li>
+                <li>Prioriza tecnica antes que peso.</li>
+                <li>Registra el descanso real entre series.</li>
+              </ul>
+            </div>
+          </details>
         </section>
 
         <section class="panel" data-view="train">

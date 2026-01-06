@@ -162,6 +162,124 @@ body {
   line-height: 1.4;
 }
 
+.card__row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.metric-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.metric-card__label {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.metric-card__value {
+  font-size: 1.6rem;
+  font-weight: 700;
+  margin: 6px 0;
+}
+
+.metric-card__delta {
+  font-size: 0.85rem;
+  color: var(--accent);
+}
+
+.progress {
+  background: rgba(148, 163, 184, 0.2);
+  border-radius: 999px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.progress__bar {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+}
+
+.chart-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sparkline {
+  padding: 8px 0;
+  color: var(--primary);
+}
+
+.sparkline svg {
+  width: 100%;
+  height: 80px;
+}
+
+.chip-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.chip {
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.mini-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: var(--muted);
+}
+
+.collapsible {
+  padding: 0;
+  overflow: hidden;
+}
+
+.collapsible__summary {
+  list-style: none;
+  padding: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.collapsible__summary::-webkit-details-marker {
+  display: none;
+}
+
+.collapsible__content {
+  padding: 0 16px 16px;
+}
+
+.collapsible__summary::after {
+  content: '+';
+  float: right;
+  color: var(--muted);
+}
+
+.collapsible[open] .collapsible__summary::after {
+  content: '-';
+}
+
+@media (min-width: 720px) {
+  .app {
+    max-width: 860px;
+  }
+
+  .metric-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
 .button {
   border: none;
   background: var(--bg-alt);
