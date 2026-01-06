@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0c66ea" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Mi PWA" />
+
+    <title>Mi PWA Personal</title>
+
+    <link rel="manifest" href="manifest.json" />
+    <link rel="icon" href="assets/icons/icon-192.png" sizes="192x192" />
+    <link rel="icon" href="assets/icons/icon-512.png" sizes="512x512" />
+    <link rel="apple-touch-icon" href="assets/icons/apple-touch-icon.png" />
+
+    <!-- iOS splash screens -->
+    <link
+      rel="apple-touch-startup-image"
+      href="assets/splash/splash-640x1136.png"
+      media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="assets/splash/splash-750x1334.png"
+      media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="assets/splash/splash-828x1792.png"
+      media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="assets/splash/splash-1125x2436.png"
+      media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="assets/splash/splash-1170x2532.png"
+      media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="assets/splash/splash-1242x2688.png"
+      media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="assets/splash/splash-1536x2048.png"
+      media="(device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="assets/splash/splash-1668x2224.png"
+      media="(device-width: 834px) and (device-height: 1112px) and (-webkit-device-pixel-ratio: 2)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="assets/splash/splash-1668x2388.png"
+      media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)"
+    />
+    <link
+      rel="apple-touch-startup-image"
+      href="assets/splash/splash-2048x2732.png"
+      media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)"
+    />
+
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="app__header">
+        <div>
+          <p class="app__subtitle">PWA privada</p>
+          <h1 class="app__title">Mi Panel Personal</h1>
+        </div>
+        <span class="status" id="statusBadge">Offline</span>
+      </header>
+
+      <nav class="app__nav">
+        <button class="nav__button" data-route="home">Inicio</button>
+        <button class="nav__button" data-route="notes">Notas</button>
+        <button class="nav__button" data-route="settings">Ajustes</button>
+      </nav>
+
+      <main class="app__content">
+        <section class="panel" data-view="home">
+          <h2>Resumen rápido</h2>
+          <div class="card">
+            <p class="card__title">Bienvenido 👋</p>
+            <p class="card__text">
+              Esta PWA funciona offline, guarda tus datos localmente y está lista
+              para ampliarse.
+            </p>
+          </div>
+          <div class="card">
+            <p class="card__title">Recordatorio rápido</p>
+            <p class="card__text" id="nextNote">Crea una nota para verla aquí.</p>
+          </div>
+        </section>
+
+        <section class="panel" data-view="notes" hidden>
+          <h2>Notas rápidas</h2>
+          <form class="note-form" id="noteForm">
+            <input
+              class="note-form__input"
+              id="noteInput"
+              type="text"
+              placeholder="Escribe una nota..."
+              maxlength="120"
+              required
+            />
+            <button class="note-form__button" type="submit">Guardar</button>
+          </form>
+          <ul class="note-list" id="noteList"></ul>
+        </section>
+
+        <section class="panel" data-view="settings" hidden>
+          <h2>Ajustes</h2>
+          <div class="card">
+            <p class="card__title">Tema</p>
+            <p class="card__text">Cambia el aspecto sin salir de la app.</p>
+            <button class="action" id="themeToggle">Alternar modo</button>
+          </div>
+          <div class="card">
+            <p class="card__title">Datos locales</p>
+            <p class="card__text">Tus notas se guardan solo en este dispositivo.</p>
+            <button class="action action--danger" id="clearNotes">Borrar notas</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
