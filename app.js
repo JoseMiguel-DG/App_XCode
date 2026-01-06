@@ -77,11 +77,22 @@ const cancelSessionButton = document.getElementById('cancelSessionButton');
 const exportData = document.getElementById('exportData');
 const importData = document.getElementById('importData');
 const importFile = document.getElementById('importFile');
+const cloudEmail = document.getElementById('cloudEmail');
+const cloudPassword = document.getElementById('cloudPassword');
+const cloudError = document.getElementById('cloudError');
+const cloudStatus = document.getElementById('cloudStatus');
+const cloudLogin = document.getElementById('cloudLogin');
+const cloudSignup = document.getElementById('cloudSignup');
+const cloudLogout = document.getElementById('cloudLogout');
+const cloudUpload = document.getElementById('cloudUpload');
+const cloudDownload = document.getElementById('cloudDownload');
 
 const STORAGE_DB = 'exercise-library-db';
 const THEME_KEY = 'personal-pwa-theme';
 const LAST_ROUTINE_DAY_KEY = 'last-routine-day-id';
 const ENABLE_SEED = true;
+const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
 
 const state = {
   theme: 'dark',
@@ -98,6 +109,11 @@ const createId = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+const supabaseClient =
+  typeof window !== 'undefined' && window.supabase
+    ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
 
 const ICONS = {
   chevron: ['M6 9l6 6 6-6'],
@@ -1926,7 +1942,7 @@ cancelSessionButton.addEventListener('click', async () => {
   await refreshTrainingHome();
 });
 
-exportData.addEventListener('click', async () => {
+const getExportPayload = async () => {
   const stores = [
     'categories',
     'exercises',
@@ -1939,6 +1955,79 @@ exportData.addEventListener('click', async () => {
   for (const store of stores) {
     payload.data[store] = await getAllFromStore(store);
   }
+  return payload;
+};
+
+const importPayload = async (parsed) => {
+  if (!parsed || !parsed.data) {
+    throw new Error('Formato incorrecto.');
+  }
+  const stores = [
+    'categories',
+    'exercises',
+    'routineDays',
+    'routineItems',
+    'trainingSessions',
+    'sessionExerciseLogs',
+  ];
+  for (const store of stores) {
+    await clearStore(store);
+    const items = parsed.data[store] || [];
+    for (const item of items) {
+      await putInStore(store, item);
+    }
+  }
+  await refreshTrainingHome();
+  await renderCategories();
+  await renderRoutineDayList();
+};
+
+const setCloudError = (message) => {
+  if (cloudError) {
+    cloudError.textContent = message || '';
+  }
+};
+
+const setCloudStatus = (message) => {
+  if (cloudStatus) {
+    cloudStatus.textContent = message || '';
+  }
+};
+
+const setCloudControls = (isAuthed) => {
+  if (!cloudLogin || !cloudSignup || !cloudLogout || !cloudUpload || !cloudDownload) return;
+  cloudLogin.hidden = isAuthed;
+  cloudSignup.hidden = isAuthed;
+  cloudLogout.hidden = !isAuthed;
+  cloudUpload.hidden = !isAuthed;
+  cloudDownload.hidden = !isAuthed;
+};
+
+const updateCloudUI = (user) => {
+  if (user) {
+    setCloudStatus(`Conectado: ${user.email || 'usuario'}`);
+    setCloudControls(true);
+  } else {
+    setCloudStatus('No autenticado.');
+    setCloudControls(false);
+  }
+};
+
+const initCloudAuth = async () => {
+  if (!supabaseClient) {
+    setCloudStatus('Supabase no disponible.');
+    setCloudControls(false);
+    return;
+  }
+  const session = await supabaseClient.auth.getSession();
+  updateCloudUI(session.data.session ? session.data.session.user : null);
+  supabaseClient.auth.onAuthStateChange((_event, newSession) => {
+    updateCloudUI(newSession ? newSession.user : null);
+  });
+};
+
+exportData.addEventListener('click', async () => {
+  const payload = await getExportPayload();
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -1963,31 +2052,142 @@ importFile.addEventListener('change', async (event) => {
     alert('Archivo invalido.');
     return;
   }
-  if (!parsed || !parsed.data) {
-    alert('Formato incorrecto.');
+  try {
+    await importPayload(parsed);
+  } catch (error) {
+    alert(error.message);
     return;
   }
-  const stores = [
-    'categories',
-    'exercises',
-    'routineDays',
-    'routineItems',
-    'trainingSessions',
-    'sessionExerciseLogs',
-  ];
-  for (const store of stores) {
-    await clearStore(store);
-    const items = parsed.data[store] || [];
-    for (const item of items) {
-      await putInStore(store, item);
-    }
-  }
-  await refreshTrainingHome();
-  await renderCategories();
-  await renderRoutineDayList();
   importFile.value = '';
   alert('Datos importados.');
 });
+
+if (cloudLogin) {
+  cloudLogin.addEventListener('click', async (event) => {
+    event.preventDefault();
+    setCloudError('');
+    if (!supabaseClient) {
+      setCloudError('Supabase no disponible.');
+      return;
+    }
+    const email = cloudEmail.value.trim();
+    const password = cloudPassword.value;
+    if (!email || !password) {
+      setCloudError('Completa email y contrasena.');
+      return;
+    }
+    const { error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) {
+      setCloudError(error.message);
+    }
+  });
+}
+
+if (cloudSignup) {
+  cloudSignup.addEventListener('click', async (event) => {
+    event.preventDefault();
+    setCloudError('');
+    if (!supabaseClient) {
+      setCloudError('Supabase no disponible.');
+      return;
+    }
+    const email = cloudEmail.value.trim();
+    const password = cloudPassword.value;
+    if (!email || !password) {
+      setCloudError('Completa email y contrasena.');
+      return;
+    }
+    const { error } = await supabaseClient.auth.signUp({ email, password });
+    if (error) {
+      setCloudError(error.message);
+      return;
+    }
+    setCloudStatus('Cuenta creada. Revisa tu correo si pide confirmacion.');
+  });
+}
+
+if (cloudLogout) {
+  cloudLogout.addEventListener('click', async (event) => {
+    event.preventDefault();
+    setCloudError('');
+    if (!supabaseClient) {
+      setCloudError('Supabase no disponible.');
+      return;
+    }
+    const { error } = await supabaseClient.auth.signOut();
+    if (error) {
+      setCloudError(error.message);
+    }
+  });
+}
+
+if (cloudUpload) {
+  cloudUpload.addEventListener('click', async (event) => {
+    event.preventDefault();
+    setCloudError('');
+    if (!supabaseClient) {
+      setCloudError('Supabase no disponible.');
+      return;
+    }
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !userData.user) {
+      setCloudError('Debes iniciar sesion.');
+      return;
+    }
+    const payload = await getExportPayload();
+    const { error } = await supabaseClient.from('user_data').upsert(
+      {
+        user_id: userData.user.id,
+        data: payload,
+        updated_at: new Date().toISOString(),
+      },
+      { onConflict: 'user_id' }
+    );
+    if (error) {
+      setCloudError(error.message);
+      return;
+    }
+    setCloudStatus('Datos subidos.');
+  });
+}
+
+if (cloudDownload) {
+  cloudDownload.addEventListener('click', async (event) => {
+    event.preventDefault();
+    setCloudError('');
+    if (!supabaseClient) {
+      setCloudError('Supabase no disponible.');
+      return;
+    }
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+    if (userError || !userData.user) {
+      setCloudError('Debes iniciar sesion.');
+      return;
+    }
+    const { data, error } = await supabaseClient
+      .from('user_data')
+      .select('data')
+      .eq('user_id', userData.user.id)
+      .maybeSingle();
+    if (error) {
+      setCloudError(error.message);
+      return;
+    }
+    if (!data || !data.data) {
+      setCloudStatus('No hay datos en la nube.');
+      return;
+    }
+    if (!confirm('Esto reemplazara tus datos locales. Continuar?')) {
+      return;
+    }
+    try {
+      await importPayload(data.data);
+      setCloudStatus('Datos descargados.');
+    } catch (err) {
+      setCloudError(err.message);
+    }
+  });
+}
 
 navButtons.forEach((button) => {
   button.addEventListener('click', () => {
@@ -2024,6 +2224,7 @@ if ('serviceWorker' in navigator) {
 
 const startApp = async () => {
   loadTheme();
+  initCloudAuth();
   const initialRoute = location.hash.replace('#', '') || 'train';
   setView(initialRoute === 'category' ? 'exercises' : initialRoute);
   updateStatus();

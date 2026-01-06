@@ -448,6 +448,43 @@
               <input type="file" id="importFile" accept="application/json" hidden />
             </div>
           </div>
+          <div class="card">
+            <p class="card__title">Sincronizacion</p>
+            <p class="card__text">Guarda tu biblioteca en la nube con una cuenta.</p>
+            <div class="form__grid">
+              <div class="form__field">
+                <label class="form__label" for="cloudEmail">Email</label>
+                <input
+                  class="form__input"
+                  id="cloudEmail"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="tu@email.com"
+                />
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="cloudPassword">Contrasena</label>
+                <input
+                  class="form__input"
+                  id="cloudPassword"
+                  type="password"
+                  autocomplete="current-password"
+                  placeholder="********"
+                />
+              </div>
+              <p class="form__error" id="cloudError"></p>
+              <p class="card__text" id="cloudStatus">No autenticado.</p>
+              <div class="form__actions">
+                <button class="button button--primary" id="cloudLogin">Entrar</button>
+                <button class="button button--ghost" id="cloudSignup">Crear cuenta</button>
+                <button class="button button--danger" id="cloudLogout" hidden>Salir</button>
+              </div>
+              <div class="form__actions">
+                <button class="button button--primary" id="cloudUpload" hidden>Subir datos</button>
+                <button class="button button--ghost" id="cloudDownload" hidden>Descargar datos</button>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section class="panel" data-view="workout" hidden>
@@ -468,6 +505,7 @@
       </main>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
   </body>
 </html>
