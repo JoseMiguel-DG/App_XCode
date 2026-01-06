@@ -2840,6 +2840,10 @@ finishSessionFromHome.addEventListener('click', async () => {
   });
   state.activeSessionId = null;
   await updateTrainingActions();
+  await renderHomeDashboard();
+  if (historyList) {
+    await renderHistoryList();
+  }
 });
 
 backToTrain.addEventListener('click', async () => {
@@ -2860,6 +2864,10 @@ finishSessionButton.addEventListener('click', async () => {
   state.activeSessionId = null;
   setView('train');
   await refreshTrainingHome();
+  await renderHomeDashboard();
+  if (historyList) {
+    await renderHistoryList();
+  }
 });
 
 cancelSessionButton.addEventListener('click', async () => {
