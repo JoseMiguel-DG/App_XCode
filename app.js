@@ -82,6 +82,12 @@ const cloudPassword = document.getElementById('cloudPassword');
 const cloudError = document.getElementById('cloudError');
 const cloudStatus = document.getElementById('cloudStatus');
 const cloudStatusDot = document.getElementById('cloudStatusDot');
+const cloudStatusUnauthed = document.getElementById('cloudStatusUnauthed');
+const cloudStatusDotUnauthed = document.getElementById('cloudStatusDotUnauthed');
+const cloudSessionPanel = document.getElementById('cloudSessionPanel');
+const cloudSessionEmail = document.getElementById('cloudSessionEmail');
+const cloudLastSync = document.getElementById('cloudLastSync');
+const cloudAuthForm = document.getElementById('cloudAuthForm');
 const cloudLogin = document.getElementById('cloudLogin');
 const cloudSignup = document.getElementById('cloudSignup');
 const cloudLogout = document.getElementById('cloudLogout');
@@ -155,6 +161,7 @@ const scheduleCloudSync = () => {
       }
       cloudSyncPending = false;
       setCloudStatus('Sincronizado.', 'ok');
+      setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(new Date().toISOString())}`);
     } catch (error) {
       setCloudError(error.message);
       setCloudStatus('Error al sincronizar. Pendiente de reintento.', 'error');
@@ -2456,14 +2463,26 @@ const setCloudError = (message) => {
 };
 
 const setCloudStatus = (message, tone = 'idle') => {
-  if (cloudStatus) {
-    cloudStatus.textContent = message || '';
-  }
-  if (cloudStatusDot) {
-    cloudStatusDot.classList.remove('is-ok', 'is-warn', 'is-error');
-    if (tone === 'ok') cloudStatusDot.classList.add('is-ok');
-    if (tone === 'warn') cloudStatusDot.classList.add('is-warn');
-    if (tone === 'error') cloudStatusDot.classList.add('is-error');
+  const targets = [
+    { text: cloudStatus, dot: cloudStatusDot },
+    { text: cloudStatusUnauthed, dot: cloudStatusDotUnauthed },
+  ];
+  targets.forEach(({ text, dot }) => {
+    if (text) {
+      text.textContent = message || '';
+    }
+    if (dot) {
+      dot.classList.remove('is-ok', 'is-warn', 'is-error');
+      if (tone === 'ok') dot.classList.add('is-ok');
+      if (tone === 'warn') dot.classList.add('is-warn');
+      if (tone === 'error') dot.classList.add('is-error');
+    }
+  });
+};
+
+const setCloudLastSync = (label) => {
+  if (cloudLastSync) {
+    cloudLastSync.textContent = label || '';
   }
 };
 
@@ -2481,9 +2500,17 @@ const updateCloudUI = (user) => {
   if (user) {
     setCloudStatus(`Conectado: ${user.email || 'usuario'}`, 'ok');
     setCloudControls(true);
+    if (cloudSessionEmail) {
+      cloudSessionEmail.textContent = user.email || 'usuario';
+    }
+    if (cloudSessionPanel) cloudSessionPanel.hidden = false;
+    if (cloudAuthForm) cloudAuthForm.hidden = true;
   } else {
     setCloudStatus('No autenticado.', 'warn');
     setCloudControls(false);
+    if (cloudSessionPanel) cloudSessionPanel.hidden = true;
+    if (cloudAuthForm) cloudAuthForm.hidden = false;
+    setCloudLastSync('');
   }
 };
 
@@ -2520,6 +2547,7 @@ const maybeAutoDownload = async (user) => {
     await importPayload(data.data);
     setCloudStatus('Datos descargados.', 'ok');
     setLocalUpdatedAt(data.updated_at);
+    setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(data.updated_at)}`);
   } catch (err) {
     setCloudError(err.message);
     setCloudStatus('Error al descargar.', 'error');
@@ -2673,6 +2701,7 @@ if (cloudUpload) {
       return;
     }
     setCloudStatus('Datos subidos.', 'ok');
+    setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(new Date().toISOString())}`);
   });
 }
 
@@ -2710,6 +2739,7 @@ if (cloudDownload) {
       await importPayload(data.data);
       setCloudStatus('Datos descargados.', 'ok');
       setLocalUpdatedAt(data.updated_at);
+      setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(data.updated_at)}`);
     } catch (err) {
       setCloudError(err.message);
       setCloudStatus('Error al descargar.', 'error');

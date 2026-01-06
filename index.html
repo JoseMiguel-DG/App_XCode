@@ -451,38 +451,58 @@
           <div class="card">
             <p class="card__title">Sincronizacion</p>
             <p class="card__text">Guarda tu biblioteca en la nube con una cuenta.</p>
-            <div class="form__grid">
-              <div class="form__field">
-                <label class="form__label" for="cloudEmail">Email</label>
-                <input
-                  class="form__input"
-                  id="cloudEmail"
-                  type="email"
-                  autocomplete="email"
-                  placeholder="tu@email.com"
-                />
+            <div class="sync-card">
+              <div class="sync-session" id="cloudSessionPanel" hidden>
+                <div class="sync-session__header">
+                  <div class="sync-session__icon">✓</div>
+                  <div>
+                    <p class="sync-session__title">Sesion activa</p>
+                    <p class="sync-session__email" id="cloudSessionEmail"></p>
+                  </div>
+                </div>
+                <div class="status-row">
+                  <span class="status-dot" id="cloudStatusDot"></span>
+                  <p class="card__text" id="cloudStatus">No autenticado.</p>
+                </div>
+                <p class="card__text" id="cloudLastSync"></p>
+                <div class="form__actions">
+                  <button class="button button--danger" id="cloudLogout" hidden>Salir</button>
+                </div>
               </div>
-              <div class="form__field">
-                <label class="form__label" for="cloudPassword">Contrasena</label>
-                <input
-                  class="form__input"
-                  id="cloudPassword"
-                  type="password"
-                  autocomplete="current-password"
-                  placeholder="********"
-                />
+
+              <div class="form__grid" id="cloudAuthForm">
+                <div class="form__field">
+                  <label class="form__label" for="cloudEmail">Email</label>
+                  <input
+                    class="form__input"
+                    id="cloudEmail"
+                    type="email"
+                    autocomplete="email"
+                    placeholder="tu@email.com"
+                  />
+                </div>
+                <div class="form__field">
+                  <label class="form__label" for="cloudPassword">Contrasena</label>
+                  <input
+                    class="form__input"
+                    id="cloudPassword"
+                    type="password"
+                    autocomplete="current-password"
+                    placeholder="********"
+                  />
+                </div>
+                <p class="form__error" id="cloudError"></p>
+                <div class="status-row">
+                  <span class="status-dot" id="cloudStatusDotUnauthed"></span>
+                  <p class="card__text" id="cloudStatusUnauthed">No autenticado.</p>
+                </div>
+                <div class="form__actions">
+                  <button class="button button--primary" id="cloudLogin">Entrar</button>
+                  <button class="button button--ghost" id="cloudSignup">Crear cuenta</button>
+                </div>
               </div>
-              <p class="form__error" id="cloudError"></p>
-              <div class="status-row">
-                <span class="status-dot" id="cloudStatusDot"></span>
-                <p class="card__text" id="cloudStatus">No autenticado.</p>
-              </div>
-              <div class="form__actions">
-                <button class="button button--primary" id="cloudLogin">Entrar</button>
-                <button class="button button--ghost" id="cloudSignup">Crear cuenta</button>
-                <button class="button button--danger" id="cloudLogout" hidden>Salir</button>
-              </div>
-              <div class="form__actions">
+
+              <div class="form__actions sync-actions">
                 <button class="button button--primary" id="cloudUpload" hidden>Subir datos</button>
                 <button class="button button--ghost" id="cloudDownload" hidden>Descargar datos</button>
               </div>
