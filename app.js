@@ -114,6 +114,36 @@ const supabaseClient =
   typeof window !== 'undefined' && window.supabase
     ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
     : null;
+let cloudUser = null;
+let cloudSyncTimer = null;
+let isCloudImporting = false;
+
+const scheduleCloudSync = () => {
+  if (!supabaseClient || !cloudUser || isCloudImporting) return;
+  if (cloudSyncTimer) {
+    clearTimeout(cloudSyncTimer);
+  }
+  cloudSyncTimer = setTimeout(async () => {
+    try {
+      const payload = await getExportPayload();
+      const { error } = await supabaseClient.from('user_data').upsert(
+        {
+          user_id: cloudUser.id,
+          data: payload,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'user_id' }
+      );
+      if (error) {
+        setCloudError(error.message);
+        return;
+      }
+      setCloudStatus('Sincronizado.');
+    } catch (error) {
+      setCloudError(error.message);
+    }
+  }, 1200);
+};
 
 const ICONS = {
   chevron: ['M6 9l6 6 6-6'],
@@ -238,6 +268,7 @@ const putInStore = async (storeName, value) => {
     const request = store.put(value);
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
+    transaction.oncomplete = () => scheduleCloudSync();
   });
 };
 
@@ -249,6 +280,7 @@ const deleteFromStore = async (storeName, id) => {
     const request = store.delete(id);
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
+    transaction.oncomplete = () => scheduleCloudSync();
   });
 };
 
@@ -260,6 +292,7 @@ const clearStore = async (storeName) => {
     const request = store.clear();
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
+    transaction.oncomplete = () => scheduleCloudSync();
   });
 };
 
@@ -2004,6 +2037,7 @@ const setCloudControls = (isAuthed) => {
 };
 
 const updateCloudUI = (user) => {
+  cloudUser = user || null;
   if (user) {
     setCloudStatus(`Conectado: ${user.email || 'usuario'}`);
     setCloudControls(true);
@@ -2181,10 +2215,13 @@ if (cloudDownload) {
       return;
     }
     try {
+      isCloudImporting = true;
       await importPayload(data.data);
       setCloudStatus('Datos descargados.');
     } catch (err) {
       setCloudError(err.message);
+    } finally {
+      isCloudImporting = false;
     }
   });
 }
