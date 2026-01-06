@@ -98,6 +98,7 @@ const homeGoTrain = document.getElementById('homeGoTrain');
 const updateToast = document.getElementById('updateToast');
 const updateNow = document.getElementById('updateNow');
 const appVersion = document.getElementById('appVersion');
+const AUTO_SW_UPDATE = true;
 const homeConsistencyCard = document.getElementById('homeConsistencyCard');
 const homeConsistencyValue = document.getElementById('homeConsistencyValue');
 const homeConsistencyBar = document.getElementById('homeConsistencyBar');
@@ -3005,15 +3006,34 @@ window.addEventListener('online', () => {
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('./service-worker.js').then((registration) => {
-      if (registration.waiting && updateToast) {
-        updateToast.hidden = false;
+      const applyUpdate = () => {
+        if (!registration.waiting) return;
+        if (sessionStorage.getItem('sw-updating')) return;
+        sessionStorage.setItem('sw-updating', '1');
+        registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+      };
+
+      registration.update();
+      setInterval(() => registration.update(), 30 * 60 * 1000);
+
+      if (registration.waiting) {
+        if (AUTO_SW_UPDATE) {
+          applyUpdate();
+        } else if (updateToast) {
+          updateToast.hidden = false;
+        }
       }
+
       registration.addEventListener('updatefound', () => {
         const newWorker = registration.installing;
         if (!newWorker) return;
         newWorker.addEventListener('statechange', () => {
           if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            if (updateToast) updateToast.hidden = false;
+            if (AUTO_SW_UPDATE) {
+              applyUpdate();
+            } else if (updateToast) {
+              updateToast.hidden = false;
+            }
           }
         });
       });
@@ -3032,12 +3052,16 @@ if (updateNow) {
         window.location.reload();
         return;
       }
+      sessionStorage.setItem('sw-updating', '1');
       registration.waiting.postMessage({ type: 'SKIP_WAITING' });
     });
   });
 }
 
 navigator.serviceWorker?.addEventListener('controllerchange', () => {
+  if (sessionStorage.getItem('sw-updating')) {
+    sessionStorage.removeItem('sw-updating');
+  }
   window.location.reload();
 });
 
