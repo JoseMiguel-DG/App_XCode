@@ -1,11 +1,11 @@
 {
-  "name": "Mi PWA Personal",
-  "short_name": "Mi PWA",
+  "name": "Engine-Mode Tracker",
+  "short_name": "Engine-Mode",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#0c66ea",
-  "theme_color": "#0c66ea",
-  "description": "PWA privada con notas locales y modo offline.",
+  "background_color": "#0b0f1a",
+  "theme_color": "#0b0f1a",
+  "description": "Tracker de entrenamiento con sincronizacion y sesiones reales.",
   "lang": "es-ES",
   "icons": [
     {

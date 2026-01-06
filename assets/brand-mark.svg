@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" role="img" aria-label="Engine-Mode Tracker">
+  <defs>
+    <linearGradient id="brandGradient" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#00d4ff" />
+      <stop offset="1" stop-color="#16a34a" />
+    </linearGradient>
+  </defs>
+  <rect width="120" height="120" rx="28" fill="#0b0f1a" />
+  <path
+    d="M35 78l12-36h16l-8 22h20l-14 36H44l8-22H35z"
+    fill="url(#brandGradient)"
+  />
+</svg>

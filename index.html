@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#0c66ea" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Mi Biblioteca" />
+    <meta name="apple-mobile-web-app-title" content="Engine-Mode Tracker" />
 
-    <title>Biblioteca de Ejercicios</title>
+    <title>Engine-Mode Tracker</title>
 
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="assets/icons/icon-192.png" sizes="192x192" />
@@ -76,9 +76,12 @@
         <button class="button button--primary" id="updateNow">Actualizar</button>
       </div>
       <header class="app__header">
-        <div>
-          <p class="app__subtitle">PWA privada</p>
-          <h1 class="app__title">Biblioteca de Ejercicios</h1>
+        <div class="brand">
+          <img class="brand__logo" src="assets/brand-mark.svg" alt="Engine-Mode Tracker" />
+          <div>
+            <p class="app__subtitle">Engine-Mode Tracker</p>
+            <h1 class="app__title">Entrena con datos reales</h1>
+          </div>
         </div>
         <span class="status" id="statusBadge">Offline</span>
       </header>
@@ -140,6 +143,21 @@
               <h2>Inicio</h2>
               <p class="panel__subtitle">Resumen de rendimiento y proxima sesion.</p>
             </div>
+          </div>
+
+          <div class="card hero-card">
+            <div>
+              <p class="hero-card__eyebrow">Panel de rendimiento</p>
+              <h3 class="hero-card__title">Controla el progreso con sesiones reales.</h3>
+              <p class="card__text">
+                Visualiza volumen, PRs y constancia sin perder el foco. Todo se sincroniza con tu cuenta.
+              </p>
+              <div class="hero-card__actions">
+                <button class="button button--primary" id="homeGoTrain">Empezar sesion</button>
+                <button class="button button--ghost" data-route="routines">Ver rutinas</button>
+              </div>
+            </div>
+            <img class="hero-card__image" src="assets/hero-workout.svg" alt="Entrenamiento" />
           </div>
 
           <div class="metric-grid">
