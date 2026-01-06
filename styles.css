@@ -411,11 +411,47 @@ body {
   cursor: pointer;
   letter-spacing: 0.02em;
   box-shadow: var(--shadow);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
 
 .button:hover {
   transform: translateY(-1px);
+  filter: brightness(1.05);
+}
+
+.button:focus-visible,
+.icon-button:focus-visible,
+.nav__button:focus-visible,
+.form__input:focus-visible {
+  outline: 2px solid rgba(168, 85, 247, 0.6);
+  outline-offset: 2px;
+}
+
+.button:disabled,
+.icon-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+  filter: none;
+  box-shadow: none;
+}
+
+.button--primary {
+  position: relative;
+  overflow: hidden;
+}
+
+.button--primary::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.2), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.button--primary:hover::after {
+  opacity: 1;
 }
 
 .icon-button {
@@ -433,11 +469,17 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
 }
 
 .icon-button svg {
   width: 16px;
   height: 16px;
+}
+
+.icon-button:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.05);
 }
 
 .icon-button--danger {
@@ -552,6 +594,11 @@ body {
   box-shadow: none;
 }
 
+.button--ghost:hover {
+  border-color: rgba(168, 85, 247, 0.5);
+  color: #f5f3ff;
+}
+
 .form {
   background: rgba(17, 24, 39, 0.85);
   padding: 16px;
@@ -594,10 +641,16 @@ body {
   background: rgba(15, 23, 42, 0.8);
   color: var(--text);
   font-size: 0.95rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 [data-theme="light"] .form__input {
   background: #ffffff;
+}
+
+.form__input:focus {
+  border-color: rgba(168, 85, 247, 0.6);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.18);
 }
 
 .form__input--textarea {
@@ -647,10 +700,16 @@ body {
   flex-direction: column;
   gap: 8px;
   box-shadow: var(--shadow);
+  transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
 [data-theme="light"] .list__item {
   background: rgba(255, 255, 255, 0.92);
+}
+
+.list__item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(168, 85, 247, 0.35);
 }
 
 .list__row {
