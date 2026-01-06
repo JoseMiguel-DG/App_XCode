@@ -87,6 +87,48 @@
       </nav>
 
       <main class="app__content">
+        <section class="panel" data-view="auth" hidden>
+          <div class="panel__header">
+            <div>
+              <h2>Iniciar sesion</h2>
+              <p class="panel__subtitle">Accede para usar tu biblioteca en la nube.</p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="form__grid" id="cloudAuthForm">
+              <div class="form__field">
+                <label class="form__label" for="cloudEmail">Email</label>
+                <input
+                  class="form__input"
+                  id="cloudEmail"
+                  type="email"
+                  autocomplete="email"
+                  placeholder="tu@email.com"
+                />
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="cloudPassword">Contrasena</label>
+                <input
+                  class="form__input"
+                  id="cloudPassword"
+                  type="password"
+                  autocomplete="current-password"
+                  placeholder="********"
+                />
+              </div>
+              <p class="form__error" id="cloudError"></p>
+              <div class="status-row">
+                <span class="status-dot" id="cloudStatusDotUnauthed"></span>
+                <p class="card__text" id="cloudStatusUnauthed">No autenticado.</p>
+              </div>
+              <div class="form__actions">
+                <button class="button button--primary" id="cloudLogin">Entrar</button>
+                <button class="button button--ghost" id="cloudSignup">Crear cuenta</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
         <section class="panel" data-view="train">
           <div class="panel__header">
             <div>
@@ -450,7 +492,7 @@
           </div>
           <div class="card">
             <p class="card__title">Sincronizacion</p>
-            <p class="card__text">Guarda tu biblioteca en la nube con una cuenta.</p>
+            <p class="card__text">Estado de tu cuenta y datos en la nube.</p>
             <div class="sync-card">
               <div class="sync-session" id="cloudSessionPanel" hidden>
                 <div class="sync-session__header">
@@ -467,38 +509,6 @@
                 <p class="card__text" id="cloudLastSync"></p>
                 <div class="form__actions">
                   <button class="button button--danger" id="cloudLogout" hidden>Salir</button>
-                </div>
-              </div>
-
-              <div class="form__grid" id="cloudAuthForm">
-                <div class="form__field">
-                  <label class="form__label" for="cloudEmail">Email</label>
-                  <input
-                    class="form__input"
-                    id="cloudEmail"
-                    type="email"
-                    autocomplete="email"
-                    placeholder="tu@email.com"
-                  />
-                </div>
-                <div class="form__field">
-                  <label class="form__label" for="cloudPassword">Contrasena</label>
-                  <input
-                    class="form__input"
-                    id="cloudPassword"
-                    type="password"
-                    autocomplete="current-password"
-                    placeholder="********"
-                  />
-                </div>
-                <p class="form__error" id="cloudError"></p>
-                <div class="status-row">
-                  <span class="status-dot" id="cloudStatusDotUnauthed"></span>
-                  <p class="card__text" id="cloudStatusUnauthed">No autenticado.</p>
-                </div>
-                <div class="form__actions">
-                  <button class="button button--primary" id="cloudLogin">Entrar</button>
-                  <button class="button button--ghost" id="cloudSignup">Crear cuenta</button>
                 </div>
               </div>
 

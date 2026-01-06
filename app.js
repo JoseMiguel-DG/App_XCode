@@ -93,6 +93,7 @@ const cloudSignup = document.getElementById('cloudSignup');
 const cloudLogout = document.getElementById('cloudLogout');
 const cloudUpload = document.getElementById('cloudUpload');
 const cloudDownload = document.getElementById('cloudDownload');
+const appContainer = document.querySelector('.app');
 
 const STORAGE_DB = 'exercise-library-db';
 const THEME_KEY = 'personal-pwa-theme';
@@ -128,6 +129,7 @@ let isCloudImporting = false;
 let isSeeding = false;
 let cloudReady = false;
 let cloudSyncPending = false;
+let isAuthenticated = false;
 
 const scheduleCloudSync = () => {
   if (!supabaseClient || !cloudUser || isCloudImporting || !cloudReady) return;
@@ -1298,6 +1300,9 @@ const toggleTheme = () => {
 };
 
 const setView = (route) => {
+  if (!isAuthenticated && route !== 'auth') {
+    route = 'auth';
+  }
   views.forEach((view) => {
     view.hidden = view.dataset.view !== route;
   });
@@ -2497,6 +2502,10 @@ const setCloudControls = (isAuthed) => {
 
 const updateCloudUI = (user) => {
   cloudUser = user || null;
+  isAuthenticated = Boolean(user);
+  if (appContainer) {
+    appContainer.classList.toggle('app--auth', !isAuthenticated);
+  }
   if (user) {
     setCloudStatus(`Conectado: ${user.email || 'usuario'}`, 'ok');
     setCloudControls(true);
@@ -2511,6 +2520,7 @@ const updateCloudUI = (user) => {
     if (cloudSessionPanel) cloudSessionPanel.hidden = true;
     if (cloudAuthForm) cloudAuthForm.hidden = false;
     setCloudLastSync('');
+    setView('auth');
   }
 };
 

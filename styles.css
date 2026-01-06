@@ -49,6 +49,14 @@ body {
   gap: 20px;
 }
 
+.app--auth .app__nav {
+  display: none;
+}
+
+.app--auth .app__content {
+  margin-top: 8px;
+}
+
 .app__header {
   display: flex;
   align-items: center;
