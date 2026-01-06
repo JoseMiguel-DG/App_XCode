@@ -201,6 +201,35 @@ body {
   transform: rotate(180deg);
 }
 
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: var(--muted);
+  box-shadow: 0 0 0 4px rgba(148, 163, 184, 0.12);
+}
+
+.status-dot.is-ok {
+  background: var(--accent);
+  box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.18);
+}
+
+.status-dot.is-warn {
+  background: #f59e0b;
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.18);
+}
+
+.status-dot.is-error {
+  background: var(--danger);
+  box-shadow: 0 0 0 4px rgba(220, 38, 38, 0.18);
+}
+
 .button--primary {
   background: var(--primary);
   color: #fff;

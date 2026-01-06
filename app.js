@@ -81,6 +81,7 @@ const cloudEmail = document.getElementById('cloudEmail');
 const cloudPassword = document.getElementById('cloudPassword');
 const cloudError = document.getElementById('cloudError');
 const cloudStatus = document.getElementById('cloudStatus');
+const cloudStatusDot = document.getElementById('cloudStatusDot');
 const cloudLogin = document.getElementById('cloudLogin');
 const cloudSignup = document.getElementById('cloudSignup');
 const cloudLogout = document.getElementById('cloudLogout');
@@ -118,15 +119,26 @@ const supabaseClient =
 let cloudUser = null;
 let cloudSyncTimer = null;
 let isCloudImporting = false;
+let isSeeding = false;
+let cloudReady = false;
+let cloudSyncPending = false;
 
 const scheduleCloudSync = () => {
-  if (!supabaseClient || !cloudUser || isCloudImporting) return;
+  if (!supabaseClient || !cloudUser || isCloudImporting || !cloudReady) return;
   if (cloudSyncTimer) {
     clearTimeout(cloudSyncTimer);
   }
-  localStorage.setItem(CLOUD_LOCAL_UPDATED_KEY, new Date().toISOString());
+  cloudSyncPending = true;
+  setCloudStatus(
+    navigator.onLine ? 'Pendiente de sincronizar...' : 'Sin conexion. Pendiente de sincronizar...',
+    'warn'
+  );
   cloudSyncTimer = setTimeout(async () => {
     try {
+      if (!navigator.onLine) {
+        setCloudStatus('Sin conexion. Pendiente de sincronizar...', 'warn');
+        return;
+      }
       const payload = await getExportPayload();
       const { error } = await supabaseClient.from('user_data').upsert(
         {
@@ -138,11 +150,14 @@ const scheduleCloudSync = () => {
       );
       if (error) {
         setCloudError(error.message);
+        setCloudStatus('Error al sincronizar. Pendiente de reintento.', 'error');
         return;
       }
-      setCloudStatus('Sincronizado.');
+      cloudSyncPending = false;
+      setCloudStatus('Sincronizado.', 'ok');
     } catch (error) {
       setCloudError(error.message);
+      setCloudStatus('Error al sincronizar. Pendiente de reintento.', 'error');
     }
   }, 1200);
 };
@@ -271,7 +286,9 @@ const putInStore = async (storeName, value) => {
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
     transaction.oncomplete = () => {
-      setLocalUpdatedAt(new Date());
+      if (!isCloudImporting && !isSeeding) {
+        setLocalUpdatedAt(new Date());
+      }
       scheduleCloudSync();
     };
   });
@@ -286,7 +303,9 @@ const deleteFromStore = async (storeName, id) => {
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
     transaction.oncomplete = () => {
-      setLocalUpdatedAt(new Date());
+      if (!isCloudImporting && !isSeeding) {
+        setLocalUpdatedAt(new Date());
+      }
       scheduleCloudSync();
     };
   });
@@ -301,7 +320,9 @@ const clearStore = async (storeName) => {
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
     transaction.oncomplete = () => {
-      setLocalUpdatedAt(new Date());
+      if (!isCloudImporting && !isSeeding) {
+        setLocalUpdatedAt(new Date());
+      }
       scheduleCloudSync();
     };
   });
@@ -2434,9 +2455,15 @@ const setCloudError = (message) => {
   }
 };
 
-const setCloudStatus = (message) => {
+const setCloudStatus = (message, tone = 'idle') => {
   if (cloudStatus) {
     cloudStatus.textContent = message || '';
+  }
+  if (cloudStatusDot) {
+    cloudStatusDot.classList.remove('is-ok', 'is-warn', 'is-error');
+    if (tone === 'ok') cloudStatusDot.classList.add('is-ok');
+    if (tone === 'warn') cloudStatusDot.classList.add('is-warn');
+    if (tone === 'error') cloudStatusDot.classList.add('is-error');
   }
 };
 
@@ -2452,10 +2479,10 @@ const setCloudControls = (isAuthed) => {
 const updateCloudUI = (user) => {
   cloudUser = user || null;
   if (user) {
-    setCloudStatus(`Conectado: ${user.email || 'usuario'}`);
+    setCloudStatus(`Conectado: ${user.email || 'usuario'}`, 'ok');
     setCloudControls(true);
   } else {
-    setCloudStatus('No autenticado.');
+    setCloudStatus('No autenticado.', 'warn');
     setCloudControls(false);
   }
 };
@@ -2484,34 +2511,18 @@ const maybeAutoDownload = async (user) => {
     return;
   }
   if (!data || !data.data) {
-    setCloudStatus('No hay datos en la nube.');
+    setCloudStatus('No hay datos en la nube.', 'warn');
     return;
-  }
-
-  const localUpdated = getLocalUpdatedAt();
-  const cloudUpdated = Date.parse(data.updated_at);
-  const drift = 1000;
-
-  if (localUpdated && cloudUpdated > localUpdated + drift) {
-    if (!confirm('Hay datos mas recientes en la nube. Descargar y reemplazar los locales?')) {
-      return;
-    }
-  } else if (localUpdated && cloudUpdated < localUpdated - drift) {
-    setCloudStatus('Tus datos locales son mas recientes.');
-    return;
-  } else if (!localUpdated) {
-    if (!confirm('Hay datos en la nube. Descargar y reemplazar los locales?')) {
-      return;
-    }
   }
 
   try {
     isCloudImporting = true;
     await importPayload(data.data);
-    setCloudStatus('Datos descargados.');
+    setCloudStatus('Datos descargados.', 'ok');
     setLocalUpdatedAt(data.updated_at);
   } catch (err) {
     setCloudError(err.message);
+    setCloudStatus('Error al descargar.', 'error');
   } finally {
     isCloudImporting = false;
   }
@@ -2519,8 +2530,9 @@ const maybeAutoDownload = async (user) => {
 
 const initCloudAuth = async () => {
   if (!supabaseClient) {
-    setCloudStatus('Supabase no disponible.');
+    setCloudStatus('Supabase no disponible.', 'error');
     setCloudControls(false);
+    cloudReady = true;
     return;
   }
   const session = await supabaseClient.auth.getSession();
@@ -2529,6 +2541,7 @@ const initCloudAuth = async () => {
   if (sessionUser) {
     await maybeAutoDownload(sessionUser);
   }
+  cloudReady = true;
   supabaseClient.auth.onAuthStateChange(async (_event, newSession) => {
     const user = newSession ? newSession.user : null;
     updateCloudUI(user);
@@ -2614,7 +2627,7 @@ if (cloudSignup) {
       setCloudError(error.message);
       return;
     }
-    setCloudStatus('Cuenta creada. Revisa tu correo si pide confirmacion.');
+    setCloudStatus('Cuenta creada. Revisa tu correo si pide confirmacion.', 'ok');
   });
 }
 
@@ -2659,7 +2672,7 @@ if (cloudUpload) {
       setCloudError(error.message);
       return;
     }
-    setCloudStatus('Datos subidos.');
+    setCloudStatus('Datos subidos.', 'ok');
   });
 }
 
@@ -2686,7 +2699,7 @@ if (cloudDownload) {
       return;
     }
     if (!data || !data.data) {
-      setCloudStatus('No hay datos en la nube.');
+      setCloudStatus('No hay datos en la nube.', 'warn');
       return;
     }
     if (!confirm('Esto reemplazara tus datos locales. Continuar?')) {
@@ -2695,10 +2708,11 @@ if (cloudDownload) {
     try {
       isCloudImporting = true;
       await importPayload(data.data);
-      setCloudStatus('Datos descargados.');
+      setCloudStatus('Datos descargados.', 'ok');
       setLocalUpdatedAt(data.updated_at);
     } catch (err) {
       setCloudError(err.message);
+      setCloudStatus('Error al descargar.', 'error');
     } finally {
       isCloudImporting = false;
     }
@@ -2731,6 +2745,11 @@ resetLibrary.addEventListener('click', async () => {
 
 window.addEventListener('online', updateStatus);
 window.addEventListener('offline', updateStatus);
+window.addEventListener('online', () => {
+  if (cloudSyncPending) {
+    scheduleCloudSync();
+  }
+});
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
@@ -2740,14 +2759,16 @@ if ('serviceWorker' in navigator) {
 
 const startApp = async () => {
   loadTheme();
-  initCloudAuth();
+  await initCloudAuth();
   const initialRoute = location.hash.replace('#', '') || 'train';
   setView(initialRoute === 'category' ? 'exercises' : initialRoute);
   updateStatus();
   try {
+    isSeeding = true;
     await seedData();
     await seedRoutineData();
     await seedTrainingData();
+    isSeeding = false;
     await renderCategories();
     await renderRoutineDayList();
     await refreshTrainingHome();
@@ -2755,6 +2776,7 @@ const startApp = async () => {
     console.error('No se pudo inicializar la base local.', error);
     statusBadge.textContent = 'Error de datos';
     statusBadge.style.borderColor = 'var(--danger)';
+    isSeeding = false;
   }
 };
 
