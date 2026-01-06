@@ -84,6 +84,7 @@ const historyDetailList = document.getElementById('historyDetailList');
 const exportData = document.getElementById('exportData');
 const importData = document.getElementById('importData');
 const importFile = document.getElementById('importFile');
+const forceRefresh = document.getElementById('forceRefresh');
 const cloudEmail = document.getElementById('cloudEmail');
 const cloudPassword = document.getElementById('cloudPassword');
 const cloudError = document.getElementById('cloudError');
@@ -3301,6 +3302,30 @@ resetLibrary.addEventListener('click', async () => {
   state.currentCategoryId = null;
   setView('exercises');
 });
+
+if (forceRefresh) {
+  forceRefresh.addEventListener('click', async () => {
+    const ok = await confirmDialog(
+      'Esto limpiara la cache de la app y recargara la pagina con la ultima version.',
+      { title: 'Forzar actualizacion', confirmText: 'Actualizar' }
+    );
+    if (!ok) return;
+    try {
+      if ('serviceWorker' in navigator) {
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(registrations.map((registration) => registration.unregister()));
+      }
+      if (window.caches) {
+        const cacheNames = await caches.keys();
+        await Promise.all(cacheNames.map((name) => caches.delete(name)));
+      }
+    } catch (error) {
+      console.error('No se pudo limpiar la cache.', error);
+    } finally {
+      window.location.reload();
+    }
+  });
+}
 
 window.addEventListener('online', updateStatus);
 window.addEventListener('offline', updateStatus);
