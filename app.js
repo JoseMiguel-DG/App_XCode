@@ -91,6 +91,7 @@ const STORAGE_DB = 'exercise-library-db';
 const THEME_KEY = 'personal-pwa-theme';
 const LAST_ROUTINE_DAY_KEY = 'last-routine-day-id';
 const ENABLE_SEED = true;
+const CLOUD_LOCAL_UPDATED_KEY = 'cloud-local-updated-at';
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
 
@@ -123,6 +124,7 @@ const scheduleCloudSync = () => {
   if (cloudSyncTimer) {
     clearTimeout(cloudSyncTimer);
   }
+  localStorage.setItem(CLOUD_LOCAL_UPDATED_KEY, new Date().toISOString());
   cloudSyncTimer = setTimeout(async () => {
     try {
       const payload = await getExportPayload();
@@ -268,7 +270,10 @@ const putInStore = async (storeName, value) => {
     const request = store.put(value);
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
-    transaction.oncomplete = () => scheduleCloudSync();
+    transaction.oncomplete = () => {
+      setLocalUpdatedAt(new Date());
+      scheduleCloudSync();
+    };
   });
 };
 
@@ -280,7 +285,10 @@ const deleteFromStore = async (storeName, id) => {
     const request = store.delete(id);
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
-    transaction.oncomplete = () => scheduleCloudSync();
+    transaction.oncomplete = () => {
+      setLocalUpdatedAt(new Date());
+      scheduleCloudSync();
+    };
   });
 };
 
@@ -292,7 +300,10 @@ const clearStore = async (storeName) => {
     const request = store.clear();
     request.onsuccess = () => resolve();
     request.onerror = () => reject(request.error);
-    transaction.oncomplete = () => scheduleCloudSync();
+    transaction.oncomplete = () => {
+      setLocalUpdatedAt(new Date());
+      scheduleCloudSync();
+    };
   });
 };
 
@@ -2047,6 +2058,63 @@ const updateCloudUI = (user) => {
   }
 };
 
+const getLocalUpdatedAt = () => {
+  const value = localStorage.getItem(CLOUD_LOCAL_UPDATED_KEY);
+  return value ? Date.parse(value) : null;
+};
+
+const setLocalUpdatedAt = (value) => {
+  const iso = value instanceof Date ? value.toISOString() : value;
+  if (iso) {
+    localStorage.setItem(CLOUD_LOCAL_UPDATED_KEY, iso);
+  }
+};
+
+const maybeAutoDownload = async (user) => {
+  if (!supabaseClient || !user) return;
+  const { data, error } = await supabaseClient
+    .from('user_data')
+    .select('data, updated_at')
+    .eq('user_id', user.id)
+    .maybeSingle();
+  if (error) {
+    setCloudError(error.message);
+    return;
+  }
+  if (!data || !data.data) {
+    setCloudStatus('No hay datos en la nube.');
+    return;
+  }
+
+  const localUpdated = getLocalUpdatedAt();
+  const cloudUpdated = Date.parse(data.updated_at);
+  const drift = 1000;
+
+  if (localUpdated && cloudUpdated > localUpdated + drift) {
+    if (!confirm('Hay datos mas recientes en la nube. Descargar y reemplazar los locales?')) {
+      return;
+    }
+  } else if (localUpdated && cloudUpdated < localUpdated - drift) {
+    setCloudStatus('Tus datos locales son mas recientes.');
+    return;
+  } else if (!localUpdated) {
+    if (!confirm('Hay datos en la nube. Descargar y reemplazar los locales?')) {
+      return;
+    }
+  }
+
+  try {
+    isCloudImporting = true;
+    await importPayload(data.data);
+    setCloudStatus('Datos descargados.');
+    setLocalUpdatedAt(data.updated_at);
+  } catch (err) {
+    setCloudError(err.message);
+  } finally {
+    isCloudImporting = false;
+  }
+};
+
 const initCloudAuth = async () => {
   if (!supabaseClient) {
     setCloudStatus('Supabase no disponible.');
@@ -2054,9 +2122,17 @@ const initCloudAuth = async () => {
     return;
   }
   const session = await supabaseClient.auth.getSession();
-  updateCloudUI(session.data.session ? session.data.session.user : null);
-  supabaseClient.auth.onAuthStateChange((_event, newSession) => {
-    updateCloudUI(newSession ? newSession.user : null);
+  const sessionUser = session.data.session ? session.data.session.user : null;
+  updateCloudUI(sessionUser);
+  if (sessionUser) {
+    await maybeAutoDownload(sessionUser);
+  }
+  supabaseClient.auth.onAuthStateChange(async (_event, newSession) => {
+    const user = newSession ? newSession.user : null;
+    updateCloudUI(user);
+    if (user) {
+      await maybeAutoDownload(user);
+    }
   });
 };
 
@@ -2218,6 +2294,7 @@ if (cloudDownload) {
       isCloudImporting = true;
       await importPayload(data.data);
       setCloudStatus('Datos descargados.');
+      setLocalUpdatedAt(data.updated_at);
     } catch (err) {
       setCloudError(err.message);
     } finally {
