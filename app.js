@@ -98,6 +98,11 @@ const homeGoTrain = document.getElementById('homeGoTrain');
 const updateToast = document.getElementById('updateToast');
 const updateNow = document.getElementById('updateNow');
 const appVersion = document.getElementById('appVersion');
+const confirmModal = document.getElementById('confirmModal');
+const confirmTitle = document.getElementById('confirmTitle');
+const confirmMessage = document.getElementById('confirmMessage');
+const confirmCancel = document.getElementById('confirmCancel');
+const confirmOk = document.getElementById('confirmOk');
 const AUTO_SW_UPDATE = true;
 const homeConsistencyCard = document.getElementById('homeConsistencyCard');
 const homeConsistencyValue = document.getElementById('homeConsistencyValue');
@@ -150,6 +155,7 @@ let isSeeding = false;
 let cloudReady = false;
 let cloudSyncPending = false;
 let isAuthenticated = false;
+let confirmResolver = null;
 
 const scheduleCloudSync = () => {
   if (!supabaseClient || !cloudUser || isCloudImporting || !cloudReady) return;
@@ -1375,6 +1381,66 @@ const formatDateTime = (iso) => {
 const formatNumber = (value, maximumFractionDigits = 1) =>
   new Intl.NumberFormat('es', { maximumFractionDigits }).format(value);
 
+const confirmDialog = (message, options = {}) => {
+  if (!confirmModal || !confirmMessage || !confirmCancel || !confirmOk) {
+    return Promise.resolve(window.confirm(message));
+  }
+  const {
+    title = 'Confirmar',
+    confirmText = 'Confirmar',
+    cancelText = 'Cancelar',
+    danger = false,
+  } = options;
+
+  confirmTitle.textContent = title;
+  confirmMessage.textContent = message;
+  confirmCancel.textContent = cancelText;
+  confirmOk.textContent = confirmText;
+  confirmOk.classList.toggle('button--danger', danger);
+  confirmOk.classList.toggle('button--primary', !danger);
+
+  confirmModal.hidden = false;
+  confirmOk.focus();
+
+  return new Promise((resolve) => {
+    confirmResolver = resolve;
+  });
+};
+
+const closeConfirm = (result) => {
+  if (!confirmModal) return;
+  confirmModal.hidden = true;
+  if (confirmResolver) {
+    confirmResolver(result);
+    confirmResolver = null;
+  }
+};
+
+if (confirmModal) {
+  confirmModal.addEventListener('click', (event) => {
+    const target = event.target;
+    if (target instanceof Element && target.dataset.action === 'cancel') {
+      closeConfirm(false);
+    }
+  });
+}
+
+if (confirmCancel) {
+  confirmCancel.addEventListener('click', () => closeConfirm(false));
+}
+
+if (confirmOk) {
+  confirmOk.addEventListener('click', () => closeConfirm(true));
+}
+
+window.addEventListener('keydown', (event) => {
+  if (!confirmModal || confirmModal.hidden) return;
+  if (event.key === 'Escape') {
+    event.preventDefault();
+    closeConfirm(false);
+  }
+});
+
 const renderHomeDashboard = async () => {
   if (!isAuthenticated) return;
   if (
@@ -1715,7 +1781,12 @@ const renderExerciseList = (exercises) => {
     deleteButton.className = 'button button--danger';
     deleteButton.textContent = 'Eliminar';
     deleteButton.addEventListener('click', async () => {
-      if (!confirm('¿Eliminar este ejercicio?')) return;
+      const ok = await confirmDialog('¿Eliminar este ejercicio?', {
+        title: 'Eliminar ejercicio',
+        confirmText: 'Eliminar',
+        danger: true,
+      });
+      if (!ok) return;
       await exerciseRepository.deleteExercise(exercise.id);
       await renderCategoryDetail();
     });
@@ -1980,7 +2051,12 @@ const renderRoutineItems = async () => {
       paths: ICONS.trash,
     });
     deleteButton.addEventListener('click', async () => {
-      if (!confirm('Eliminar este ejercicio de la rutina?')) return;
+      const ok = await confirmDialog('Eliminar este ejercicio de la rutina?', {
+        title: 'Eliminar ejercicio',
+        confirmText: 'Eliminar',
+        danger: true,
+      });
+      if (!ok) return;
       await routineItemRepository.deleteRoutineItem(item.id);
       await renderRoutineItems();
       await renderRoutineDayPreview();
@@ -2416,7 +2492,12 @@ renameCategory.addEventListener('click', async () => {
 });
 
 deleteCategory.addEventListener('click', async () => {
-  if (!confirm('¿Eliminar la categoría y todos sus ejercicios?')) return;
+  const ok = await confirmDialog('¿Eliminar la categoría y todos sus ejercicios?', {
+    title: 'Eliminar categoria',
+    confirmText: 'Eliminar',
+    danger: true,
+  });
+  if (!ok) return;
   await exerciseRepository.deleteCategory(state.currentCategoryId);
   state.currentCategoryId = null;
   await renderCategories();
@@ -2512,7 +2593,12 @@ duplicateRoutineDay.addEventListener('click', async (event) => {
 deleteRoutineDay.addEventListener('click', async (event) => {
   event.preventDefault();
   if (!state.currentRoutineDayId) return;
-  if (!confirm('Eliminar este dia y sus ejercicios?')) return;
+  const ok = await confirmDialog('Eliminar este dia y sus ejercicios?', {
+    title: 'Eliminar dia',
+    confirmText: 'Eliminar',
+    danger: true,
+  });
+  if (!ok) return;
   await routineRepository.deleteRoutineDay(state.currentRoutineDayId);
   state.currentRoutineDayId = null;
   routineEditor.hidden = true;
@@ -2590,7 +2676,11 @@ resumeSessionButton.addEventListener('click', async () => {
 
 finishSessionFromHome.addEventListener('click', async () => {
   if (!state.activeSessionId) return;
-  if (!confirm('Finalizar la sesion activa?')) return;
+  const ok = await confirmDialog('Finalizar la sesion activa?', {
+    title: 'Finalizar sesion',
+    confirmText: 'Finalizar',
+  });
+  if (!ok) return;
   await trainingRepository.updateSession(state.activeSessionId, {
     finishedAt: new Date().toISOString(),
   });
@@ -2605,7 +2695,11 @@ backToTrain.addEventListener('click', async () => {
 
 finishSessionButton.addEventListener('click', async () => {
   if (!state.activeSessionId) return;
-  if (!confirm('Finalizar la sesion?')) return;
+  const ok = await confirmDialog('Finalizar la sesion?', {
+    title: 'Finalizar sesion',
+    confirmText: 'Finalizar',
+  });
+  if (!ok) return;
   await trainingRepository.updateSession(state.activeSessionId, {
     finishedAt: new Date().toISOString(),
   });
@@ -2616,7 +2710,12 @@ finishSessionButton.addEventListener('click', async () => {
 
 cancelSessionButton.addEventListener('click', async () => {
   if (!state.activeSessionId) return;
-  if (!confirm('Cancelar esta sesion y borrar sus registros?')) return;
+  const ok = await confirmDialog('Cancelar esta sesion y borrar sus registros?', {
+    title: 'Cancelar sesion',
+    confirmText: 'Cancelar sesion',
+    danger: true,
+  });
+  if (!ok) return;
   await trainingRepository.deleteSession(state.activeSessionId);
   await sessionLogRepository.deleteLogsBySession(state.activeSessionId);
   state.activeSessionId = null;
@@ -2946,7 +3045,12 @@ if (cloudDownload) {
       setCloudStatus('No hay datos en la nube.', 'warn');
       return;
     }
-    if (!confirm('Esto reemplazara tus datos locales. Continuar?')) {
+    const ok = await confirmDialog('Esto reemplazara tus datos locales. Continuar?', {
+      title: 'Reemplazar datos',
+      confirmText: 'Reemplazar',
+      danger: true,
+    });
+    if (!ok) {
       return;
     }
     try {
@@ -2987,7 +3091,12 @@ navButtons.forEach((button) => {
 themeToggle.addEventListener('click', toggleTheme);
 
 resetLibrary.addEventListener('click', async () => {
-  if (!confirm('¿Eliminar toda la biblioteca local?')) return;
+  const ok = await confirmDialog('¿Eliminar toda la biblioteca local?', {
+    title: 'Eliminar biblioteca',
+    confirmText: 'Eliminar',
+    danger: true,
+  });
+  if (!ok) return;
   await exerciseRepository.resetAll();
   await seedData();
   await renderCategories();

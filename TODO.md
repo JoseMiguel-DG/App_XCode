@@ -1,0 +1,3 @@
+- Logo + branding
+- Historial de entrenos pasados + consultarlos + eliminarlos
+- Icono app movil + logo pestaña
