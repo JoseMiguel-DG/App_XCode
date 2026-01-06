@@ -844,13 +844,9 @@ body {
 
 .set-row {
   display: grid;
-  grid-template-columns: 48px repeat(3, 1fr) 56px;
+  grid-template-columns: 48px repeat(3, 1fr);
   gap: 8px;
   align-items: center;
-}
-
-.set-row--history {
-  grid-template-columns: 48px repeat(3, 1fr);
 }
 
 .set-row__label {

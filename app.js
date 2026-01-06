@@ -1481,7 +1481,6 @@ const renderHomeDashboard = async () => {
     const session = sessionsById.get(log.sessionId);
     if (!session || !session.finishedAt) return;
     const volume = (log.sets || []).reduce((acc, set) => {
-      if (!set.isDone) return acc;
       if (set.weight == null || set.reps == null) return acc;
       return acc + set.weight * set.reps;
     }, 0);
@@ -1542,7 +1541,7 @@ const renderHomeDashboard = async () => {
     const session = sessionsById.get(log.sessionId);
     if (!session || !session.finishedAt) return;
     const bestWeight = (log.sets || []).reduce((max, set) => {
-      if (!set.isDone || set.weight == null) return max;
+      if (set.weight == null) return max;
       return Math.max(max, set.weight);
     }, 0);
     if (!bestWeight) return;
@@ -1633,7 +1632,6 @@ const getSessionVolume = (logs) =>
   logs.reduce((total, log) => {
     const sets = log.sets || [];
     const volume = sets.reduce((acc, set) => {
-      if (!set.isDone) return acc;
       if (set.weight == null || set.reps == null) return acc;
       return acc + set.weight * set.reps;
     }, 0);
@@ -1745,7 +1743,7 @@ const openHistorySession = async (sessionId) => {
     list.className = 'set-list';
     (log.sets || []).forEach((set, index) => {
       const row = document.createElement('div');
-      row.className = 'set-row set-row--history';
+      row.className = 'set-row';
       const label = document.createElement('div');
       label.className = 'set-row__label';
       label.textContent = `#${index + 1}`;
@@ -2431,12 +2429,28 @@ const getLastPerformance = async (exerciseId, currentSessionId) => {
   const latest = valid[0];
   const sets = latest.log.sets || [];
   if (sets.length === 0) return null;
-  const lastSet = [...sets].reverse().find((set) => set.isDone) || sets[sets.length - 1];
+  const lastSet = sets[sets.length - 1];
   if (!lastSet) return null;
   return {
     summary: `${lastSet.weight ?? '-'}kg x ${lastSet.reps ?? '-'}`,
     date: latest.session.startedAt,
   };
+};
+
+const getExercisePR = async (exerciseId, currentSessionId) => {
+  const logs = await sessionLogRepository.listLogsByExercise(exerciseId);
+  const filtered = logs.filter((log) => log.sessionId !== currentSessionId);
+  if (filtered.length === 0) return null;
+  let maxWeight = null;
+  filtered.forEach((log) => {
+    (log.sets || []).forEach((set) => {
+      if (set.weight == null) return;
+      if (maxWeight == null || set.weight > maxWeight) {
+        maxWeight = set.weight;
+      }
+    });
+  });
+  return maxWeight == null ? null : maxWeight;
 };
 
 const renderWorkoutView = async (sessionId) => {
@@ -2488,8 +2502,10 @@ const renderWorkoutView = async (sessionId) => {
     lastPerformance.className = 'workout-card__meta';
     lastPerformance.textContent = 'Ultimo: ...';
     const last = await getLastPerformance(item.exerciseId, session.id);
+    const pr = await getExercisePR(item.exerciseId, session.id);
     if (last) {
-      lastPerformance.textContent = `Ultimo: ${last.summary} (${formatDateTime(last.date)})`;
+      const prText = pr != null ? ` · PR: ${pr} kg` : '';
+      lastPerformance.textContent = `Ultimo: ${last.summary} (${formatDateTime(last.date)})${prText}`;
     } else {
       lastPerformance.textContent = 'Ultimo: sin registros';
     }
@@ -2537,22 +2553,10 @@ const renderWorkoutView = async (sessionId) => {
           await sessionLogRepository.saveLog(log);
         });
 
-        const doneWrap = document.createElement('label');
-        doneWrap.className = 'set-checkbox';
-        const doneInput = document.createElement('input');
-        doneInput.type = 'checkbox';
-        doneInput.checked = Boolean(set.isDone);
-        doneInput.addEventListener('change', async (event) => {
-          set.isDone = event.target.checked;
-          await sessionLogRepository.saveLog(log);
-        });
-        doneWrap.appendChild(doneInput);
-
         row.appendChild(label);
         row.appendChild(weightInput);
         row.appendChild(repsInput);
         row.appendChild(rirInput);
-        row.appendChild(doneWrap);
         setList.appendChild(row);
       });
     };
@@ -2569,7 +2573,6 @@ const renderWorkoutView = async (sessionId) => {
         weight: null,
         reps: null,
         rir: null,
-        isDone: false,
         createdAt: new Date().toISOString(),
       });
       await sessionLogRepository.saveLog(log);
