@@ -49,6 +49,25 @@ body {
   gap: 20px;
 }
 
+.update-toast {
+  position: sticky;
+  top: 12px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 12px 14px;
+  box-shadow: var(--shadow);
+}
+
+.update-toast__text {
+  font-weight: 600;
+}
+
 .app--auth .app__nav {
   display: none;
 }

@@ -95,6 +95,8 @@ const cloudUpload = document.getElementById('cloudUpload');
 const cloudDownload = document.getElementById('cloudDownload');
 const appContainer = document.querySelector('.app');
 const homeGoTrain = document.getElementById('homeGoTrain');
+const updateToast = document.getElementById('updateToast');
+const updateNow = document.getElementById('updateNow');
 const homeConsistencyCard = document.getElementById('homeConsistencyCard');
 const homeConsistencyValue = document.getElementById('homeConsistencyValue');
 const homeConsistencyBar = document.getElementById('homeConsistencyBar');
@@ -3000,9 +3002,42 @@ window.addEventListener('online', () => {
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
-    navigator.serviceWorker.register('./service-worker.js');
+    navigator.serviceWorker.register('./service-worker.js').then((registration) => {
+      if (registration.waiting && updateToast) {
+        updateToast.hidden = false;
+      }
+      registration.addEventListener('updatefound', () => {
+        const newWorker = registration.installing;
+        if (!newWorker) return;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            if (updateToast) updateToast.hidden = false;
+          }
+        });
+      });
+    });
   });
 }
+
+if (updateNow) {
+  updateNow.addEventListener('click', () => {
+    if (!navigator.serviceWorker) {
+      window.location.reload();
+      return;
+    }
+    navigator.serviceWorker.getRegistration().then((registration) => {
+      if (!registration || !registration.waiting) {
+        window.location.reload();
+        return;
+      }
+      registration.waiting.postMessage({ type: 'SKIP_WAITING' });
+    });
+  });
+}
+
+navigator.serviceWorker?.addEventListener('controllerchange', () => {
+  window.location.reload();
+});
 
 const startApp = async () => {
   loadTheme();
