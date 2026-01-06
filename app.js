@@ -1389,6 +1389,12 @@ const formatDateTime = (iso) => {
   return date.toLocaleString('es', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
 };
 
+const formatDate = (iso) => {
+  if (!iso) return '';
+  const date = new Date(iso);
+  return date.toLocaleDateString('es', { day: '2-digit', month: 'short', year: '2-digit' });
+};
+
 const formatNumber = (value, maximumFractionDigits = 1) =>
   new Intl.NumberFormat('es', { maximumFractionDigits }).format(value);
 
@@ -2442,15 +2448,17 @@ const getExercisePR = async (exerciseId, currentSessionId) => {
   const filtered = logs.filter((log) => log.sessionId !== currentSessionId);
   if (filtered.length === 0) return null;
   let maxWeight = null;
+  let maxDate = null;
   filtered.forEach((log) => {
     (log.sets || []).forEach((set) => {
       if (set.weight == null) return;
       if (maxWeight == null || set.weight > maxWeight) {
         maxWeight = set.weight;
+        maxDate = log.createdAt || null;
       }
     });
   });
-  return maxWeight == null ? null : maxWeight;
+  return maxWeight == null ? null : { weight: maxWeight, date: maxDate };
 };
 
 const renderWorkoutView = async (sessionId) => {
@@ -2504,8 +2512,8 @@ const renderWorkoutView = async (sessionId) => {
     const last = await getLastPerformance(item.exerciseId, session.id);
     const pr = await getExercisePR(item.exerciseId, session.id);
     if (last) {
-      const prText = pr != null ? ` · PR: ${pr} kg` : '';
-      lastPerformance.textContent = `Ultimo: ${last.summary} (${formatDateTime(last.date)})${prText}`;
+      const prText = pr ? ` · PR: ${pr.weight} kg (${formatDate(pr.date)})` : '';
+      lastPerformance.textContent = `Ultimo: ${last.summary}${prText}`;
     } else {
       lastPerformance.textContent = 'Ultimo: sin registros';
     }
