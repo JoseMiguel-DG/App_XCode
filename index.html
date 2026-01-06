@@ -85,7 +85,29 @@
             <h1 class="app__title">Smart Training</h1>
           </div>
         </div>
-        <span class="status" id="statusBadge">Offline</span>
+        <div class="header__actions">
+          <button class="icon-button" data-route="settings" aria-label="Ajustes" title="Ajustes">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path
+                d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M19.4 15a1.7 1.7 0 0 0 .33 1.82l.04.04a2 2 0 1 1-2.83 2.83l-.04-.04a1.7 1.7 0 0 0-1.82-.33 1.7 1.7 0 0 0-1 1.54V21a2 2 0 1 1-4 0v-.06a1.7 1.7 0 0 0-1-1.54 1.7 1.7 0 0 0-1.82.33l-.04.04a2 2 0 1 1-2.83-2.83l.04-.04A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.54-1H3a2 2 0 1 1 0-4h.06a1.7 1.7 0 0 0 1.54-1 1.7 1.7 0 0 0-.33-1.82l-.04-.04a2 2 0 1 1 2.83-2.83l.04.04A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.54V3a2 2 0 1 1 4 0v.06a1.7 1.7 0 0 0 1 1.54 1.7 1.7 0 0 0 1.82-.33l.04-.04a2 2 0 1 1 2.83 2.83l-.04.04A1.7 1.7 0 0 0 19.4 9c.4.3.65.77.66 1.27V10c0 .5-.26.97-.66 1.27"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
+          <span class="status" id="statusBadge">Offline</span>
+        </div>
       </header>
 
       <nav class="app__nav">
@@ -94,7 +116,6 @@
         <button class="nav__button" data-route="routines">Rutinas</button>
         <button class="nav__button" data-route="history">Historial</button>
         <button class="nav__button" data-route="exercises">Biblioteca</button>
-        <button class="nav__button" data-route="settings">Ajustes</button>
       </nav>
 
       <main class="app__content">

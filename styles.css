@@ -172,6 +172,12 @@ body {
   gap: 16px;
 }
 
+.header__actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -252,6 +258,16 @@ body {
 
 .nav__button:active {
   transform: scale(0.98);
+}
+
+[data-theme="light"] .nav__button {
+  background: rgba(15, 23, 42, 0.08);
+  color: #0f172a;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+}
+
+[data-theme="light"] .nav__button.active {
+  color: #ffffff;
 }
 
 @media (max-width: 640px) {
