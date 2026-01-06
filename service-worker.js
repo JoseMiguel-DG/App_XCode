@@ -7,7 +7,7 @@ const CORE_ASSETS = [
   './manifest.json',
   './assets/icons/favicon-16.png',
   './assets/icons/favicon-32.png',
-  './assets/brand-mark.svg',
+  './assets/brand-mark.png',
   './assets/hero-workout.svg',
   './assets/icons/icon-192.png',
   './assets/icons/icon-256.png',
