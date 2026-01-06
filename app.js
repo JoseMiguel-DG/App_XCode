@@ -95,6 +95,20 @@ const cloudUpload = document.getElementById('cloudUpload');
 const cloudDownload = document.getElementById('cloudDownload');
 const appContainer = document.querySelector('.app');
 const homeGoTrain = document.getElementById('homeGoTrain');
+const homeConsistencyCard = document.getElementById('homeConsistencyCard');
+const homeConsistencyValue = document.getElementById('homeConsistencyValue');
+const homeConsistencyBar = document.getElementById('homeConsistencyBar');
+const homeVolumeCard = document.getElementById('homeVolumeCard');
+const homeVolumeValue = document.getElementById('homeVolumeValue');
+const homeVolumeDelta = document.getElementById('homeVolumeDelta');
+const homePrsCard = document.getElementById('homePrsCard');
+const homePrsValue = document.getElementById('homePrsValue');
+const homePrsDelta = document.getElementById('homePrsDelta');
+const homeChartCard = document.getElementById('homeChartCard');
+const homeSparkline = document.getElementById('homeSparkline');
+const homeNextSessionCard = document.getElementById('homeNextSessionCard');
+const homeNextSessionTitle = document.getElementById('homeNextSessionTitle');
+const homeNextSessionList = document.getElementById('homeNextSessionList');
 
 const STORAGE_DB = 'exercise-library-db';
 const THEME_KEY = 'personal-pwa-theme';
@@ -1311,6 +1325,9 @@ const setView = (route) => {
     button.classList.toggle('active', button.dataset.route === route);
   });
   history.replaceState(null, '', `#${route}`);
+  if (route === 'home') {
+    renderHomeDashboard();
+  }
   if (route === 'routines') {
     routineEditor.hidden = true;
     state.expandedRoutineItemId = null;
@@ -1348,6 +1365,186 @@ const formatDateTime = (iso) => {
   if (!iso) return '';
   const date = new Date(iso);
   return date.toLocaleString('es', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
+};
+
+const formatNumber = (value, maximumFractionDigits = 1) =>
+  new Intl.NumberFormat('es', { maximumFractionDigits }).format(value);
+
+const renderHomeDashboard = async () => {
+  if (!isAuthenticated) return;
+  if (
+    !homeConsistencyCard ||
+    !homeVolumeCard ||
+    !homePrsCard ||
+    !homeChartCard ||
+    !homeNextSessionCard
+  ) {
+    return;
+  }
+
+  const [sessions, logs, exercises, routineDays, routineItems] = await Promise.all([
+    getAllFromStore('trainingSessions'),
+    getAllFromStore('sessionExerciseLogs'),
+    getAllFromStore('exercises'),
+    getAllFromStore('routineDays'),
+    getAllFromStore('routineItems'),
+  ]);
+
+  const exerciseMap = new Map(exercises.map((exercise) => [exercise.id, exercise]));
+  const sessionsById = new Map(sessions.map((session) => [session.id, session]));
+  const finishedSessions = sessions.filter((session) => session.finishedAt);
+
+  const volumeBySession = new Map();
+  logs.forEach((log) => {
+    const session = sessionsById.get(log.sessionId);
+    if (!session || !session.finishedAt) return;
+    const volume = (log.sets || []).reduce((acc, set) => {
+      if (!set.isDone) return acc;
+      if (set.weight == null || set.reps == null) return acc;
+      return acc + set.weight * set.reps;
+    }, 0);
+    if (!volume) return;
+    volumeBySession.set(log.sessionId, (volumeBySession.get(log.sessionId) || 0) + volume);
+  });
+
+  const now = Date.now();
+  const weekMs = 7 * 24 * 60 * 60 * 1000;
+  const weekStart = now - weekMs;
+  const prevWeekStart = now - 2 * weekMs;
+
+  const sessionsThisWeek = finishedSessions.filter(
+    (session) => new Date(session.finishedAt).getTime() >= weekStart
+  );
+  const sessionsPrevWeek = finishedSessions.filter((session) => {
+    const ts = new Date(session.finishedAt).getTime();
+    return ts >= prevWeekStart && ts < weekStart;
+  });
+
+  if (sessionsThisWeek.length > 0) {
+    homeConsistencyCard.hidden = false;
+    homeConsistencyValue.textContent = `${sessionsThisWeek.length}`;
+    const ratio = Math.min(sessionsThisWeek.length / 7, 1);
+    homeConsistencyBar.style.width = `${Math.round(ratio * 100)}%`;
+  } else {
+    homeConsistencyCard.hidden = true;
+  }
+
+  const volumeThisWeek = sessionsThisWeek.reduce(
+    (acc, session) => acc + (volumeBySession.get(session.id) || 0),
+    0
+  );
+  const volumePrevWeek = sessionsPrevWeek.reduce(
+    (acc, session) => acc + (volumeBySession.get(session.id) || 0),
+    0
+  );
+  if (volumeThisWeek > 0) {
+    homeVolumeCard.hidden = false;
+    if (volumeThisWeek >= 1000) {
+      homeVolumeValue.textContent = `${formatNumber(volumeThisWeek / 1000, 1)}k kg`;
+    } else {
+      homeVolumeValue.textContent = `${formatNumber(volumeThisWeek, 0)} kg`;
+    }
+    if (volumePrevWeek > 0 && homeVolumeDelta) {
+      const delta = ((volumeThisWeek - volumePrevWeek) / volumePrevWeek) * 100;
+      const sign = delta >= 0 ? '+' : '';
+      homeVolumeDelta.textContent = `${sign}${formatNumber(delta, 0)}% vs semana pasada`;
+    } else if (homeVolumeDelta) {
+      homeVolumeDelta.textContent = '';
+    }
+  } else {
+    homeVolumeCard.hidden = true;
+  }
+
+  const logsByExercise = new Map();
+  logs.forEach((log) => {
+    const session = sessionsById.get(log.sessionId);
+    if (!session || !session.finishedAt) return;
+    const bestWeight = (log.sets || []).reduce((max, set) => {
+      if (!set.isDone || set.weight == null) return max;
+      return Math.max(max, set.weight);
+    }, 0);
+    if (!bestWeight) return;
+    const list = logsByExercise.get(log.exerciseId) || [];
+    list.push({ bestWeight, finishedAt: session.finishedAt });
+    logsByExercise.set(log.exerciseId, list);
+  });
+
+  const prs = [];
+  logsByExercise.forEach((entries, exerciseId) => {
+    if (entries.length < 2) return;
+    entries.sort((a, b) => new Date(a.finishedAt) - new Date(b.finishedAt));
+    const latest = entries[entries.length - 1].bestWeight;
+    const prevBest = Math.max(...entries.slice(0, -1).map((entry) => entry.bestWeight));
+    if (latest > prevBest) {
+      const exercise = exerciseMap.get(exerciseId);
+      prs.push(exercise ? exercise.name : 'Ejercicio');
+    }
+  });
+
+  if (prs.length > 0) {
+    homePrsCard.hidden = false;
+    homePrsValue.textContent = `${prs.length}`;
+    homePrsDelta.textContent = prs.slice(0, 3).join(', ');
+  } else {
+    homePrsCard.hidden = true;
+  }
+
+  const dayBuckets = [];
+  for (let i = 13; i >= 0; i -= 1) {
+    const day = new Date(now - i * 24 * 60 * 60 * 1000);
+    day.setHours(0, 0, 0, 0);
+    dayBuckets.push({ day, total: 0 });
+  }
+  const bucketIndex = new Map(dayBuckets.map((bucket, idx) => [bucket.day.getTime(), idx]));
+  finishedSessions.forEach((session) => {
+    const day = new Date(session.finishedAt);
+    day.setHours(0, 0, 0, 0);
+    const index = bucketIndex.get(day.getTime());
+    if (index == null) return;
+    dayBuckets[index].total += volumeBySession.get(session.id) || 0;
+  });
+  const totals = dayBuckets.map((bucket) => bucket.total);
+  const maxTotal = Math.max(...totals, 0);
+  if (maxTotal > 0 && homeSparkline) {
+    homeChartCard.hidden = false;
+    const width = 240;
+    const height = 80;
+    const padding = 6;
+    const points = totals
+      .map((total, idx) => {
+        const x = padding + (idx * (width - padding * 2)) / (totals.length - 1);
+        const y =
+          height - padding - (total / maxTotal) * (height - padding * 2);
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      })
+      .join(' ');
+    homeSparkline.setAttribute('points', points);
+  } else {
+    homeChartCard.hidden = true;
+  }
+
+  if (routineDays.length > 0) {
+    const lastId = localStorage.getItem(LAST_ROUTINE_DAY_KEY);
+    const selected =
+      routineDays.find((day) => day.id === lastId) || routineDays[0];
+    homeNextSessionCard.hidden = false;
+    homeNextSessionTitle.textContent = selected ? `Rutina sugerida: ${selected.name}` : '';
+    homeNextSessionList.innerHTML = '';
+    if (selected) {
+      const items = routineItems
+        .filter((item) => item.routineDayId === selected.id)
+        .sort((a, b) => a.order - b.order)
+        .slice(0, 3);
+      items.forEach((item) => {
+        const exercise = exerciseMap.get(item.exerciseId);
+        const span = document.createElement('span');
+        span.textContent = exercise ? exercise.name : 'Ejercicio eliminado';
+        homeNextSessionList.appendChild(span);
+      });
+    }
+  } else {
+    homeNextSessionCard.hidden = true;
+  }
 };
 
 const getExerciseMap = async () => {

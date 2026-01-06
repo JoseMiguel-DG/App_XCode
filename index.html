@@ -139,26 +139,26 @@
           </div>
 
           <div class="metric-grid">
-            <div class="card metric-card">
-              <p class="metric-card__label">Constancia semanal</p>
-              <p class="metric-card__value">4 / 5</p>
+            <div class="card metric-card" id="homeConsistencyCard" hidden>
+              <p class="metric-card__label">Sesiones en 7 dias</p>
+              <p class="metric-card__value" id="homeConsistencyValue"></p>
               <div class="progress">
-                <span class="progress__bar" style="width: 80%"></span>
+                <span class="progress__bar" id="homeConsistencyBar"></span>
               </div>
             </div>
-            <div class="card metric-card">
-              <p class="metric-card__label">Volumen total</p>
-              <p class="metric-card__value">12.4k kg</p>
-              <p class="metric-card__delta">+8% vs semana pasada</p>
+            <div class="card metric-card" id="homeVolumeCard" hidden>
+              <p class="metric-card__label">Volumen semanal</p>
+              <p class="metric-card__value" id="homeVolumeValue"></p>
+              <p class="metric-card__delta" id="homeVolumeDelta"></p>
             </div>
-            <div class="card metric-card">
+            <div class="card metric-card" id="homePrsCard" hidden>
               <p class="metric-card__label">PRs recientes</p>
-              <p class="metric-card__value">3</p>
-              <p class="metric-card__delta">Pecho +2, Pierna +1</p>
+              <p class="metric-card__value" id="homePrsValue"></p>
+              <p class="metric-card__delta" id="homePrsDelta"></p>
             </div>
           </div>
 
-          <div class="card chart-card">
+          <div class="card chart-card" id="homeChartCard" hidden>
             <div class="card__row">
               <div>
                 <p class="card__title">Rendimiento 14 dias</p>
@@ -169,54 +169,25 @@
             <div class="sparkline">
               <svg viewBox="0 0 240 80" aria-hidden="true" focusable="false">
                 <polyline
+                  id="homeSparkline"
                   fill="none"
                   stroke="currentColor"
                   stroke-width="3"
-                  points="5,60 35,52 60,58 90,40 120,45 145,30 170,38 200,22 235,28"
+                  points=""
                 />
               </svg>
             </div>
-            <div class="chip-row">
-              <span class="chip">Fuerza</span>
-              <span class="chip">Hipertrofia</span>
-              <span class="chip">Tecnica</span>
-            </div>
           </div>
 
-          <div class="card">
+          <div class="card" id="homeNextSessionCard" hidden>
             <p class="card__title">Proxima sesion</p>
-            <p class="card__text">Rutina sugerida: Pecho + Hombro.</p>
+            <p class="card__text" id="homeNextSessionTitle"></p>
             <div class="card__row">
-              <div class="mini-list">
-                <span>Press banca</span>
-                <span>Press militar</span>
-                <span>Aperturas</span>
-              </div>
+              <div class="mini-list" id="homeNextSessionList"></div>
               <button class="button button--primary" id="homeGoTrain">Ir a Entrenar</button>
             </div>
           </div>
 
-          <details class="card collapsible" open>
-            <summary class="collapsible__summary">Insights de esta semana</summary>
-            <div class="collapsible__content">
-              <ul class="mini-list">
-                <li>Mejoras en rango de movimiento (+12%).</li>
-                <li>Fatiga controlada en pierna (RIR medio 2.3).</li>
-                <li>Recomendacion: sube 2.5kg en press banca.</li>
-              </ul>
-            </div>
-          </details>
-
-          <details class="card collapsible">
-            <summary class="collapsible__summary">Tips rapidos</summary>
-            <div class="collapsible__content">
-              <ul class="mini-list">
-                <li>Calienta con series ligeras y movimientos especificos.</li>
-                <li>Prioriza tecnica antes que peso.</li>
-                <li>Registra el descanso real entre series.</li>
-              </ul>
-            </div>
-          </details>
         </section>
 
         <section class="panel" data-view="train">
