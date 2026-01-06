@@ -1,5 +1,5 @@
 - Logo + branding
-- Icono app movil + logo pestaña
+- logo pestaña
 - Perfil
 - Ventana de PR
-- Mejor
+- Running

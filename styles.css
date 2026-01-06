@@ -254,6 +254,26 @@ body {
   transform: scale(0.98);
 }
 
+@media (max-width: 640px) {
+  .app__nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x proximity;
+    padding-right: 18px;
+  }
+
+  .app__nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav__button {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    scroll-snap-align: start;
+  }
+}
+
 .app__content {
   display: flex;
   flex-direction: column;
