@@ -97,6 +97,7 @@ const appContainer = document.querySelector('.app');
 const homeGoTrain = document.getElementById('homeGoTrain');
 const updateToast = document.getElementById('updateToast');
 const updateNow = document.getElementById('updateNow');
+const appVersion = document.getElementById('appVersion');
 const homeConsistencyCard = document.getElementById('homeConsistencyCard');
 const homeConsistencyValue = document.getElementById('homeConsistencyValue');
 const homeConsistencyBar = document.getElementById('homeConsistencyBar');
@@ -119,6 +120,7 @@ const ENABLE_SEED = true;
 const CLOUD_LOCAL_UPDATED_KEY = 'cloud-local-updated-at';
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
+const APP_VERSION = '0.9.0';
 
 const state = {
   theme: 'dark',
@@ -3041,6 +3043,9 @@ navigator.serviceWorker?.addEventListener('controllerchange', () => {
 
 const startApp = async () => {
   loadTheme();
+  if (appVersion) {
+    appVersion.textContent = APP_VERSION;
+  }
   await initCloudAuth();
   const hashRoute = location.hash.replace('#', '');
   const initialRoute = isAuthenticated ? (hashRoute || 'home') : 'auth';

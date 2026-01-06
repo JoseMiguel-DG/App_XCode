@@ -93,6 +93,13 @@ body {
   color: var(--muted);
 }
 
+.app__version {
+  font-size: 0.75rem;
+  color: var(--muted);
+  text-align: center;
+  margin-top: 6px;
+}
+
 .status {
   background: var(--bg-alt);
   border-radius: 999px;
