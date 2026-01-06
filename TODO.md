@@ -2,4 +2,4 @@
 - Icono app movil + logo pestaña
 - Perfil
 - Ventana de PR
-- Mejor menu registro
+- Mejor
