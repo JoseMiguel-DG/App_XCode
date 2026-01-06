@@ -1,8 +1,6 @@
 const views = document.querySelectorAll('[data-view]');
 const navButtons = document.querySelectorAll('[data-route]');
 const statusBadge = document.getElementById('statusBadge');
-const navBar = document.querySelector('.app__nav');
-const mobileMenuToggle = document.getElementById('mobileMenuToggle');
 const themeToggle = document.getElementById('themeToggle');
 const resetLibrary = document.getElementById('resetLibrary');
 
@@ -3286,21 +3284,8 @@ navButtons.forEach((button) => {
     if (route === 'routines') {
       renderRoutineDayList();
     }
-    if (navBar) {
-      navBar.classList.remove('nav--open');
-    }
-    if (mobileMenuToggle) {
-      mobileMenuToggle.setAttribute('aria-expanded', 'false');
-    }
   });
 });
-
-if (mobileMenuToggle && navBar) {
-  mobileMenuToggle.addEventListener('click', () => {
-    const isOpen = navBar.classList.toggle('nav--open');
-    mobileMenuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-  });
-}
 
 themeToggle.addEventListener('click', toggleTheme);
 
