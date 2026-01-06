@@ -34,6 +34,15 @@
   padding: 0;
 }
 
+html {
+  min-height: 100%;
+  background: var(--bg);
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(168, 85, 247, 0.2), transparent 40%),
+    radial-gradient(circle at 85% 10%, rgba(124, 58, 237, 0.2), transparent 45%),
+    radial-gradient(circle at 50% 90%, rgba(148, 163, 184, 0.15), transparent 35%);
+}
+
 [hidden] {
   display: none !important;
 }
@@ -46,9 +55,18 @@ body {
     radial-gradient(circle at 50% 90%, rgba(148, 163, 184, 0.15), transparent 35%);
   color: var(--text);
   min-height: 100vh;
+  padding-top: env(safe-area-inset-top);
 }
 
 [data-theme="light"] body {
+  background-image:
+    radial-gradient(circle at 15% 20%, rgba(139, 92, 246, 0.12), transparent 40%),
+    radial-gradient(circle at 85% 10%, rgba(124, 58, 237, 0.14), transparent 45%),
+    radial-gradient(circle at 50% 90%, rgba(148, 163, 184, 0.12), transparent 35%);
+}
+
+[data-theme="light"] html {
+  background: var(--bg);
   background-image:
     radial-gradient(circle at 15% 20%, rgba(139, 92, 246, 0.12), transparent 40%),
     radial-gradient(circle at 85% 10%, rgba(124, 58, 237, 0.14), transparent 45%),
