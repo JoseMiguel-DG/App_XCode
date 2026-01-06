@@ -80,12 +80,221 @@
       </header>
 
       <nav class="app__nav">
-        <button class="nav__button" data-route="exercises">Ejercicios</button>
+        <button class="nav__button" data-route="train">Entrenar</button>
+        <button class="nav__button" data-route="routines">Rutinas</button>
+        <button class="nav__button" data-route="exercises">Biblioteca</button>
         <button class="nav__button" data-route="settings">Ajustes</button>
       </nav>
 
       <main class="app__content">
-        <section class="panel" data-view="exercises">
+        <section class="panel" data-view="train">
+          <div class="panel__header">
+            <div>
+              <h2>Entrenar</h2>
+              <p class="panel__subtitle">Selecciona un dia y revisa la rutina.</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <label class="form__label" for="routineDaySelect">Dia</label>
+            <select class="form__input" id="routineDaySelect"></select>
+            <p class="form__error" id="routineDaySelectError"></p>
+          </div>
+
+          <div class="card" id="routineDayPreview">
+            <p class="card__title" id="routineDayName">Sin rutina</p>
+            <p class="card__text" id="routineDayNotes"></p>
+            <ul class="list list--compact" id="routineDayItems"></ul>
+          </div>
+
+          <div class="panel__actions" id="trainingActionButtons">
+            <button class="button button--primary" id="startSessionButton">Iniciar sesion</button>
+            <button class="button button--ghost" id="resumeSessionButton" hidden>Reanudar sesion</button>
+            <button class="button button--danger" id="finishSessionFromHome" hidden>
+              Finalizar sesion
+            </button>
+          </div>
+        </section>
+
+        <section class="panel" data-view="routines" hidden>
+          <div class="panel__header">
+            <div>
+              <h2>Rutinas</h2>
+              <p class="panel__subtitle">Crea plantillas por dia.</p>
+            </div>
+            <button class="button button--primary" id="newRoutineDayButton">+ Nuevo dia</button>
+          </div>
+
+          <form class="form" id="routineDayForm" hidden>
+            <h4 class="form__title">Nuevo dia</h4>
+            <div class="form__grid">
+              <div class="form__field">
+                <label class="form__label" for="routineDayNameInput">Nombre*</label>
+                <input
+                  class="form__input"
+                  id="routineDayNameInput"
+                  type="text"
+                  placeholder="Ej. Pecho, Push A"
+                  maxlength="40"
+                  required
+                />
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="routineDayNotesInput">Notas</label>
+                <textarea
+                  class="form__input form__input--textarea"
+                  id="routineDayNotesInput"
+                  rows="2"
+                  placeholder="Opcional"
+                ></textarea>
+              </div>
+            </div>
+            <p class="form__error" id="routineDayError"></p>
+            <div class="form__actions">
+              <button class="button button--primary" type="submit">Guardar</button>
+              <button class="button button--ghost" type="button" id="cancelRoutineDay">Cancelar</button>
+            </div>
+          </form>
+
+          <ul class="list" id="routineDayList"></ul>
+
+          <div class="card" id="routineEditor" hidden>
+            <div class="panel__header panel__header--tight">
+              <div>
+                <h3 id="routineEditorTitle">Editar dia</h3>
+                <p class="panel__subtitle" id="routineEditorMeta"></p>
+              </div>
+              <div class="panel__actions">
+                <button
+                  class="icon-button icon-button--toggle"
+                  id="toggleRoutineEditFields"
+                  title="Mostrar edicion"
+                  aria-label="Mostrar edicion"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path
+                      d="M6 9l6 6 6-6"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </button>
+                <button class="icon-button" id="duplicateRoutineDay" title="Duplicar" aria-label="Duplicar">
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path
+                      d="M7 7h10v12H7z"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M5 5h10v2H5z"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </button>
+                <button
+                  class="icon-button icon-button--danger"
+                  id="deleteRoutineDay"
+                  title="Eliminar"
+                  aria-label="Eliminar"
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                    <path
+                      d="M3 6h18"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M8 6V4h8v2"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                    <path
+                      d="M6 6l1 14h10l1-14"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="form__grid" id="routineEditFields" hidden>
+              <div class="form__field">
+                <label class="form__label" for="routineDayEditName">Nombre*</label>
+                <input
+                  class="form__input"
+                  id="routineDayEditName"
+                  type="text"
+                  maxlength="40"
+                  required
+                />
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="routineDayEditNotes">Notas</label>
+                <textarea
+                  class="form__input form__input--textarea"
+                  id="routineDayEditNotes"
+                  rows="2"
+                  placeholder="Opcional"
+                ></textarea>
+              </div>
+              <p class="form__error" id="routineEditorError"></p>
+              <div class="form__actions">
+                <button class="button button--primary" id="saveRoutineDayEdits">Guardar cambios</button>
+              </div>
+            </div>
+
+            <div class="panel__header panel__header--tight">
+              <h3>Ejercicios</h3>
+            </div>
+            <ul class="list" id="routineItemList"></ul>
+
+            <div class="form__grid">
+              <div class="form__field">
+                <label class="form__label" for="routineExerciseSearch">Buscar ejercicio</label>
+                <input
+                  class="form__input"
+                  id="routineExerciseSearch"
+                  type="search"
+                  placeholder="Nombre..."
+                />
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="routineCategoryFilter">Categoria</label>
+                <select class="form__input" id="routineCategoryFilter"></select>
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="routineExerciseSelect">Ejercicio</label>
+                <select class="form__input" id="routineExerciseSelect"></select>
+              </div>
+              <div class="form__actions">
+                <button class="button button--primary" id="addRoutineItem">+ Agregar ejercicio</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" data-view="exercises" hidden>
           <div class="panel__header">
             <div>
               <h2>Ejercicios</h2>
@@ -230,6 +439,31 @@
             <p class="card__text">La biblioteca se guarda solo en este dispositivo.</p>
             <button class="button button--danger" id="resetLibrary">Borrar biblioteca</button>
           </div>
+          <div class="card">
+            <p class="card__title">Exportar / Importar</p>
+            <p class="card__text">Guarda o restaura toda la base local en JSON.</p>
+            <div class="form__actions">
+              <button class="button button--primary" id="exportData">Exportar datos</button>
+              <button class="button button--ghost" id="importData">Importar datos</button>
+              <input type="file" id="importFile" accept="application/json" hidden />
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" data-view="workout" hidden>
+          <div class="panel__header">
+            <div>
+              <button class="button button--ghost" id="backToTrain">Volver</button>
+              <h2 id="workoutTitle">Sesion activa</h2>
+              <p class="panel__subtitle" id="workoutMeta"></p>
+            </div>
+            <div class="panel__actions">
+              <button class="button button--danger" id="finishSessionButton">Finalizar sesion</button>
+              <button class="button button--ghost" id="cancelSessionButton">Cancelar</button>
+            </div>
+          </div>
+          <p class="form__error" id="workoutError"></p>
+          <div class="stack" id="workoutExerciseList"></div>
         </section>
       </main>
     </div>

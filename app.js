@@ -33,20 +33,107 @@ const exerciseError = document.getElementById('exerciseError');
 const cancelExercise = document.getElementById('cancelExercise');
 const exerciseList = document.getElementById('exerciseList');
 
+const routineDaySelect = document.getElementById('routineDaySelect');
+const routineDaySelectError = document.getElementById('routineDaySelectError');
+const routineDayName = document.getElementById('routineDayName');
+const routineDayNotes = document.getElementById('routineDayNotes');
+const routineDayItems = document.getElementById('routineDayItems');
+const startSessionButton = document.getElementById('startSessionButton');
+const resumeSessionButton = document.getElementById('resumeSessionButton');
+const finishSessionFromHome = document.getElementById('finishSessionFromHome');
+
+const newRoutineDayButton = document.getElementById('newRoutineDayButton');
+const routineDayForm = document.getElementById('routineDayForm');
+const routineDayNameInput = document.getElementById('routineDayNameInput');
+const routineDayNotesInput = document.getElementById('routineDayNotesInput');
+const routineDayError = document.getElementById('routineDayError');
+const cancelRoutineDay = document.getElementById('cancelRoutineDay');
+const routineDayList = document.getElementById('routineDayList');
+const routineEditor = document.getElementById('routineEditor');
+const routineEditorTitle = document.getElementById('routineEditorTitle');
+const routineEditorMeta = document.getElementById('routineEditorMeta');
+const routineDayEditName = document.getElementById('routineDayEditName');
+const routineDayEditNotes = document.getElementById('routineDayEditNotes');
+const routineEditorError = document.getElementById('routineEditorError');
+const saveRoutineDayEdits = document.getElementById('saveRoutineDayEdits');
+const duplicateRoutineDay = document.getElementById('duplicateRoutineDay');
+const deleteRoutineDay = document.getElementById('deleteRoutineDay');
+const routineItemList = document.getElementById('routineItemList');
+const routineEditFields = document.getElementById('routineEditFields');
+const toggleRoutineEditFields = document.getElementById('toggleRoutineEditFields');
+const routineExerciseSearch = document.getElementById('routineExerciseSearch');
+const routineCategoryFilter = document.getElementById('routineCategoryFilter');
+const routineExerciseSelect = document.getElementById('routineExerciseSelect');
+const addRoutineItem = document.getElementById('addRoutineItem');
+
+const backToTrain = document.getElementById('backToTrain');
+const workoutTitle = document.getElementById('workoutTitle');
+const workoutMeta = document.getElementById('workoutMeta');
+const workoutError = document.getElementById('workoutError');
+const workoutExerciseList = document.getElementById('workoutExerciseList');
+const finishSessionButton = document.getElementById('finishSessionButton');
+const cancelSessionButton = document.getElementById('cancelSessionButton');
+
+const exportData = document.getElementById('exportData');
+const importData = document.getElementById('importData');
+const importFile = document.getElementById('importFile');
+
 const STORAGE_DB = 'exercise-library-db';
 const THEME_KEY = 'personal-pwa-theme';
+const LAST_ROUTINE_DAY_KEY = 'last-routine-day-id';
 const ENABLE_SEED = true;
 
 const state = {
-  theme: 'light',
+  theme: 'dark',
   currentCategoryId: null,
   exerciseSearch: '',
+  currentRoutineDayId: null,
+  routineExerciseSearch: '',
+  routineCategoryFilter: 'all',
+  activeSessionId: null,
+  expandedRoutineItemId: null,
 };
 
 const createId = () =>
   typeof crypto !== 'undefined' && crypto.randomUUID
     ? crypto.randomUUID()
     : `id-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+const ICONS = {
+  chevron: ['M6 9l6 6 6-6'],
+  edit: ['M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 3 21l.5-4.5L17 3z'],
+  duplicate: ['M7 7h10v12H7z', 'M5 5h10v2H5z'],
+  trash: ['M3 6h18', 'M8 6V4h8v2', 'M6 6l1 14h10l1-14'],
+  up: ['M12 5l-5 5', 'M12 5l5 5', 'M12 5v14'],
+  down: ['M12 19l-5-5', 'M12 19l5-5', 'M12 19V5'],
+};
+
+const createIconButton = ({ title, className, paths }) => {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = className;
+  button.title = title;
+  button.setAttribute('aria-label', title);
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+
+  paths.forEach((d) => {
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', d);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', 'currentColor');
+    path.setAttribute('stroke-width', '2');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(path);
+  });
+
+  button.appendChild(svg);
+  return button;
+};
 
 const updateStatus = () => {
   const online = navigator.onLine;
@@ -56,7 +143,7 @@ const updateStatus = () => {
 
 const openDatabase = () =>
   new Promise((resolve, reject) => {
-    const request = indexedDB.open(STORAGE_DB, 1);
+    const request = indexedDB.open(STORAGE_DB, 2);
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains('categories')) {
@@ -68,12 +155,42 @@ const openDatabase = () =>
         exerciseStore.createIndex('categoryId', 'categoryId', { unique: false });
         exerciseStore.createIndex('nameLower', 'nameLower', { unique: false });
       }
+      if (!db.objectStoreNames.contains('routineDays')) {
+        const routineDayStore = db.createObjectStore('routineDays', { keyPath: 'id' });
+        routineDayStore.createIndex('nameLower', 'nameLower', { unique: false });
+      }
+      if (!db.objectStoreNames.contains('routineItems')) {
+        const routineItemStore = db.createObjectStore('routineItems', { keyPath: 'id' });
+        routineItemStore.createIndex('routineDayId', 'routineDayId', { unique: false });
+      }
+      if (!db.objectStoreNames.contains('trainingSessions')) {
+        const sessionStore = db.createObjectStore('trainingSessions', { keyPath: 'id' });
+        sessionStore.createIndex('routineDayId', 'routineDayId', { unique: false });
+        sessionStore.createIndex('finishedAt', 'finishedAt', { unique: false });
+        sessionStore.createIndex('routineDayId_finishedAt', ['routineDayId', 'finishedAt'], {
+          unique: false,
+        });
+      }
+      if (!db.objectStoreNames.contains('sessionExerciseLogs')) {
+        const logStore = db.createObjectStore('sessionExerciseLogs', { keyPath: 'id' });
+        logStore.createIndex('sessionId', 'sessionId', { unique: false });
+        logStore.createIndex('exerciseId', 'exerciseId', { unique: false });
+      }
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
 
-const dbPromise = openDatabase();
+const createDbPromise = () => {
+  try {
+    return openDatabase();
+  } catch (error) {
+    console.error('IndexedDB no disponible.', error);
+    return Promise.reject(error);
+  }
+};
+
+const dbPromise = createDbPromise();
 
 const getAllFromStore = async (storeName) => {
   const db = await dbPromise;
@@ -287,6 +404,281 @@ const exerciseRepository = {
   },
 };
 
+const routineRepository = {
+  async listRoutineDays() {
+    const days = await getAllFromStore('routineDays');
+    return days.sort((a, b) => a.name.localeCompare(b.name, 'es'));
+  },
+  async getRoutineDay(id) {
+    return getFromStore('routineDays', id);
+  },
+  async createRoutineDay(data) {
+    const trimmed = data.name.trim();
+    if (!trimmed) {
+      throw new Error('El nombre es obligatorio.');
+    }
+    const lower = trimmed.toLowerCase();
+    const days = await this.listRoutineDays();
+    if (days.some((day) => day.nameLower === lower)) {
+      throw new Error('Ya existe un dia con ese nombre.');
+    }
+    const now = Date.now();
+    const day = {
+      id: createId(),
+      name: trimmed,
+      nameLower: lower,
+      notes: data.notes || '',
+      createdAt: now,
+      updatedAt: now,
+    };
+    await putInStore('routineDays', day);
+    return day;
+  },
+  async updateRoutineDay(id, updates) {
+    const day = await this.getRoutineDay(id);
+    if (!day) {
+      throw new Error('Dia no encontrado.');
+    }
+    const newName = updates.name ? updates.name.trim() : day.name;
+    if (!newName) {
+      throw new Error('El nombre es obligatorio.');
+    }
+    const lower = newName.toLowerCase();
+    const days = await this.listRoutineDays();
+    if (days.some((item) => item.id !== id && item.nameLower === lower)) {
+      throw new Error('Ya existe un dia con ese nombre.');
+    }
+    const updated = {
+      ...day,
+      name: newName,
+      nameLower: lower,
+      notes: updates.notes ?? day.notes,
+      updatedAt: Date.now(),
+    };
+    await putInStore('routineDays', updated);
+    return updated;
+  },
+  async deleteRoutineDay(id) {
+    const db = await dbPromise;
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction(['routineDays', 'routineItems'], 'readwrite');
+      transaction.objectStore('routineDays').delete(id);
+      const itemStore = transaction.objectStore('routineItems');
+      const index = itemStore.index('routineDayId');
+      const request = index.openCursor(IDBKeyRange.only(id));
+      request.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (cursor) {
+          cursor.delete();
+          cursor.continue();
+        }
+      };
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+  },
+  async duplicateRoutineDay(id) {
+    const day = await this.getRoutineDay(id);
+    if (!day) {
+      throw new Error('Dia no encontrado.');
+    }
+    const days = await this.listRoutineDays();
+    const baseName = `${day.name} copia`;
+    let newName = baseName;
+    let counter = 2;
+    while (days.some((item) => item.nameLower === newName.toLowerCase())) {
+      newName = `${baseName} ${counter}`;
+      counter += 1;
+    }
+    const items = await routineItemRepository.listItemsByRoutineDay(id);
+    const duplicate = await this.createRoutineDay({
+      name: newName,
+      notes: day.notes,
+    });
+    for (const item of items) {
+      await routineItemRepository.createRoutineItem({
+        routineDayId: duplicate.id,
+        exerciseId: item.exerciseId,
+        order: item.order,
+        targetSets: item.targetSets,
+        targetRepsMin: item.targetRepsMin,
+        targetRepsMax: item.targetRepsMax,
+        restSeconds: item.restSeconds,
+        targetRIR: item.targetRIR,
+        notes: item.notes,
+      });
+    }
+    return duplicate;
+  },
+};
+
+const routineItemRepository = {
+  async listItemsByRoutineDay(routineDayId) {
+    const db = await dbPromise;
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction('routineItems', 'readonly');
+      const store = transaction.objectStore('routineItems');
+      const index = store.index('routineDayId');
+      const request = index.getAll(IDBKeyRange.only(routineDayId));
+      request.onsuccess = () => {
+        const results = request.result || [];
+        resolve(results.sort((a, b) => a.order - b.order));
+      };
+      request.onerror = () => reject(request.error);
+    });
+  },
+  async getRoutineItem(id) {
+    return getFromStore('routineItems', id);
+  },
+  async createRoutineItem(data) {
+    const now = Date.now();
+    const items = await this.listItemsByRoutineDay(data.routineDayId);
+    const nextOrder =
+      typeof data.order === 'number'
+        ? data.order
+        : items.length > 0
+          ? items[items.length - 1].order + 1
+          : 1;
+    const item = {
+      id: createId(),
+      routineDayId: data.routineDayId,
+      exerciseId: data.exerciseId,
+      order: nextOrder,
+      targetSets: data.targetSets ?? 3,
+      targetRepsMin: data.targetRepsMin ?? 6,
+      targetRepsMax: data.targetRepsMax ?? 10,
+      restSeconds: data.restSeconds ?? null,
+      targetRIR: data.targetRIR ?? null,
+      notes: data.notes || '',
+      createdAt: now,
+      updatedAt: now,
+    };
+    await putInStore('routineItems', item);
+    return item;
+  },
+  async updateRoutineItem(id, updates) {
+    const item = await this.getRoutineItem(id);
+    if (!item) {
+      throw new Error('Item no encontrado.');
+    }
+    const updated = {
+      ...item,
+      ...updates,
+      updatedAt: Date.now(),
+    };
+    await putInStore('routineItems', updated);
+    return updated;
+  },
+  async deleteRoutineItem(id) {
+    await deleteFromStore('routineItems', id);
+  },
+};
+
+const trainingRepository = {
+  async createSession(routineDayId) {
+    const now = new Date().toISOString();
+    const session = {
+      id: createId(),
+      routineDayId,
+      startedAt: now,
+      finishedAt: null,
+      sessionNotes: '',
+    };
+    await putInStore('trainingSessions', session);
+    return session;
+  },
+  async getSession(id) {
+    return getFromStore('trainingSessions', id);
+  },
+  async updateSession(id, updates) {
+    const session = await this.getSession(id);
+    if (!session) {
+      throw new Error('Sesion no encontrada.');
+    }
+    const updated = { ...session, ...updates };
+    await putInStore('trainingSessions', updated);
+    return updated;
+  },
+  async deleteSession(id) {
+    await deleteFromStore('trainingSessions', id);
+  },
+  async listActiveSessionsByRoutineDay(routineDayId) {
+    if (!routineDayId) return [];
+    const db = await dbPromise;
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction('trainingSessions', 'readonly');
+      const store = transaction.objectStore('trainingSessions');
+      const index = store.index('routineDayId');
+      const request = index.getAll(IDBKeyRange.only(routineDayId));
+      request.onsuccess = () => {
+        const results = (request.result || []).filter((session) => !session.finishedAt);
+        resolve(results);
+      };
+      request.onerror = () => reject(request.error);
+    });
+  },
+  async listAllSessions() {
+    return getAllFromStore('trainingSessions');
+  },
+};
+
+const sessionLogRepository = {
+  async listLogsBySession(sessionId) {
+    const db = await dbPromise;
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction('sessionExerciseLogs', 'readonly');
+      const store = transaction.objectStore('sessionExerciseLogs');
+      const index = store.index('sessionId');
+      const request = index.getAll(IDBKeyRange.only(sessionId));
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  async listLogsByExercise(exerciseId) {
+    const db = await dbPromise;
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction('sessionExerciseLogs', 'readonly');
+      const store = transaction.objectStore('sessionExerciseLogs');
+      const index = store.index('exerciseId');
+      const request = index.getAll(IDBKeyRange.only(exerciseId));
+      request.onsuccess = () => resolve(request.result || []);
+      request.onerror = () => reject(request.error);
+    });
+  },
+  async getLog(id) {
+    return getFromStore('sessionExerciseLogs', id);
+  },
+  async getLogForSessionExercise(sessionId, exerciseId) {
+    const logs = await this.listLogsBySession(sessionId);
+    return logs.find((log) => log.exerciseId === exerciseId) || null;
+  },
+  async saveLog(log) {
+    await putInStore('sessionExerciseLogs', log);
+    return log;
+  },
+  async deleteLog(id) {
+    await deleteFromStore('sessionExerciseLogs', id);
+  },
+  async deleteLogsBySession(sessionId) {
+    const db = await dbPromise;
+    return new Promise((resolve, reject) => {
+      const transaction = db.transaction('sessionExerciseLogs', 'readwrite');
+      const store = transaction.objectStore('sessionExerciseLogs');
+      const index = store.index('sessionId');
+      const request = index.openCursor(IDBKeyRange.only(sessionId));
+      request.onsuccess = (event) => {
+        const cursor = event.target.result;
+        if (cursor) {
+          cursor.delete();
+          cursor.continue();
+        }
+      };
+      transaction.oncomplete = () => resolve();
+      transaction.onerror = () => reject(transaction.error);
+    });
+  },
+};
+
 const seedData = async () => {
   if (!ENABLE_SEED) return;
   const categories = await exerciseRepository.listCategories();
@@ -330,9 +722,82 @@ const seedData = async () => {
   });
 };
 
+const seedRoutineData = async () => {
+  if (!ENABLE_SEED) return;
+  const routineDays = await routineRepository.listRoutineDays();
+  if (routineDays.length > 0) return;
+
+  const exercises = await exerciseRepository.listAllExercises();
+  const exerciseMap = new Map(exercises.map((exercise) => [exercise.nameLower, exercise]));
+  const pecho = exerciseMap.get('press banca con barra');
+  const inclinado = exerciseMap.get('press inclinado con mancuerna');
+  const remo = exerciseMap.get('remo con barra');
+
+  const routineDay = await routineRepository.createRoutineDay({
+    name: 'Pecho',
+    notes: 'Rutina base para pecho.',
+  });
+
+  const seedItems = [
+    pecho && { exerciseId: pecho.id, targetSets: 4, targetRepsMin: 6, targetRepsMax: 10 },
+    inclinado && { exerciseId: inclinado.id, targetSets: 3, targetRepsMin: 8, targetRepsMax: 12 },
+    remo && { exerciseId: remo.id, targetSets: 3, targetRepsMin: 8, targetRepsMax: 12 },
+  ].filter(Boolean);
+
+  for (const [index, item] of seedItems.entries()) {
+    await routineItemRepository.createRoutineItem({
+      routineDayId: routineDay.id,
+      exerciseId: item.exerciseId,
+      order: index + 1,
+      targetSets: item.targetSets,
+      targetRepsMin: item.targetRepsMin,
+      targetRepsMax: item.targetRepsMax,
+      restSeconds: 90,
+      targetRIR: 2,
+      notes: '',
+    });
+  }
+};
+
+const seedTrainingData = async () => {
+  if (!ENABLE_SEED) return;
+  const sessions = await trainingRepository.listAllSessions();
+  if (sessions.length > 0) return;
+  const days = await routineRepository.listRoutineDays();
+  if (days.length === 0) return;
+  const routineDay = days[0];
+  const items = await routineItemRepository.listItemsByRoutineDay(routineDay.id);
+  if (items.length === 0) return;
+
+  const session = await trainingRepository.createSession(routineDay.id);
+  await trainingRepository.updateSession(session.id, {
+    finishedAt: new Date().toISOString(),
+  });
+
+  for (const item of items) {
+    const log = {
+      id: createId(),
+      sessionId: session.id,
+      exerciseId: item.exerciseId,
+      sets: [
+        {
+          setNumber: 1,
+          weight: 60,
+          reps: 10,
+          rir: 2,
+          isDone: true,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+      createdAt: new Date().toISOString(),
+    };
+    await sessionLogRepository.saveLog(log);
+  }
+};
+
 const loadTheme = () => {
   const stored = localStorage.getItem(THEME_KEY);
-  state.theme = stored || 'light';
+  state.theme = stored || 'dark';
   document.documentElement.dataset.theme = state.theme;
 };
 
@@ -350,6 +815,48 @@ const setView = (route) => {
     button.classList.toggle('active', button.dataset.route === route);
   });
   history.replaceState(null, '', `#${route}`);
+  if (route === 'routines') {
+    routineEditor.hidden = true;
+    state.expandedRoutineItemId = null;
+    if (routineEditFields) {
+      routineEditFields.hidden = true;
+    }
+    if (toggleRoutineEditFields) {
+      toggleRoutineEditFields.classList.remove('is-open');
+      toggleRoutineEditFields.setAttribute('aria-label', 'Mostrar edicion');
+      toggleRoutineEditFields.title = 'Mostrar edicion';
+    }
+  }
+};
+
+const formatTarget = (item) => {
+  const reps =
+    item.targetRepsMin && item.targetRepsMax
+      ? `${item.targetRepsMin}-${item.targetRepsMax}`
+      : item.targetRepsMin || item.targetRepsMax
+        ? `${item.targetRepsMin || item.targetRepsMax}`
+        : '-';
+  const sets = item.targetSets ? `${item.targetSets}x` : '';
+  const rest = item.restSeconds ? ` | Descanso ${item.restSeconds}s` : '';
+  const rir = item.targetRIR ? ` | RIR ${item.targetRIR}` : '';
+  return `${sets}${reps}${rest}${rir}`.trim();
+};
+
+const parseNumber = (value) => {
+  if (value === '' || value === null || value === undefined) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+};
+
+const formatDateTime = (iso) => {
+  if (!iso) return '';
+  const date = new Date(iso);
+  return date.toLocaleString('es', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' });
+};
+
+const getExerciseMap = async () => {
+  const exercises = await exerciseRepository.listAllExercises();
+  return new Map(exercises.map((exercise) => [exercise.id, exercise]));
 };
 
 const clearCategoryForm = () => {
@@ -586,6 +1093,593 @@ const getExercisePayload = () => ({
   categoryId: exerciseCategorySelect.value || state.currentCategoryId,
 });
 
+const clearRoutineDayForm = () => {
+  routineDayNameInput.value = '';
+  routineDayNotesInput.value = '';
+  routineDayError.textContent = '';
+};
+
+const showRoutineDayForm = () => {
+  routineDayForm.hidden = false;
+  routineDayNameInput.focus();
+};
+
+const hideRoutineDayForm = () => {
+  routineDayForm.hidden = true;
+  clearRoutineDayForm();
+};
+
+const setRoutineEditorError = (message) => {
+  routineEditorError.textContent = message;
+};
+
+const renderRoutineDayList = async () => {
+  const days = await routineRepository.listRoutineDays();
+  routineDayList.innerHTML = '';
+  if (days.length === 0) {
+    const empty = document.createElement('li');
+    empty.className = 'empty-state';
+    empty.textContent = 'Crea tu primer dia para entrenar.';
+    routineDayList.appendChild(empty);
+    routineEditor.hidden = true;
+    return;
+  }
+
+  days.forEach((day) => {
+    const item = document.createElement('li');
+    item.className = 'list__item';
+
+    const row = document.createElement('div');
+    row.className = 'list__row';
+
+    const info = document.createElement('div');
+    const title = document.createElement('div');
+    title.className = 'list__title';
+    title.textContent = day.name;
+
+    const meta = document.createElement('div');
+    meta.className = 'list__meta';
+    meta.textContent = day.notes || 'Sin notas.';
+
+    info.appendChild(title);
+    info.appendChild(meta);
+
+    const actions = document.createElement('div');
+    actions.className = 'list__actions';
+    const editButton = createIconButton({
+      title: 'Editar',
+      className: 'icon-button',
+      paths: ICONS.edit,
+    });
+    editButton.addEventListener('click', () => openRoutineDayEditor(day.id));
+    actions.appendChild(editButton);
+
+    row.appendChild(info);
+    row.appendChild(actions);
+    item.appendChild(row);
+    routineDayList.appendChild(item);
+  });
+};
+
+const fillRoutineCategoryFilter = async () => {
+  const categories = await exerciseRepository.listCategories();
+  routineCategoryFilter.innerHTML = '';
+  const allOption = document.createElement('option');
+  allOption.value = 'all';
+  allOption.textContent = 'Todas las categorias';
+  routineCategoryFilter.appendChild(allOption);
+  categories.forEach((category) => {
+    const option = document.createElement('option');
+    option.value = category.id;
+    option.textContent = category.name;
+    routineCategoryFilter.appendChild(option);
+  });
+  routineCategoryFilter.value = state.routineCategoryFilter || 'all';
+};
+
+const updateRoutineExerciseOptions = async () => {
+  const exercises = await exerciseRepository.listAllExercises();
+  const filtered = exercises.filter((exercise) => {
+    const matchesSearch =
+      !state.routineExerciseSearch ||
+      exercise.nameLower.includes(state.routineExerciseSearch);
+    const matchesCategory =
+      state.routineCategoryFilter === 'all' || exercise.categoryId === state.routineCategoryFilter;
+    return matchesSearch && matchesCategory;
+  });
+  routineExerciseSelect.innerHTML = '';
+  if (filtered.length === 0) {
+    const empty = document.createElement('option');
+    empty.textContent = 'Sin resultados';
+    empty.value = '';
+    routineExerciseSelect.appendChild(empty);
+    return;
+  }
+  filtered.forEach((exercise) => {
+    const option = document.createElement('option');
+    option.value = exercise.id;
+    option.textContent = exercise.name;
+    routineExerciseSelect.appendChild(option);
+  });
+};
+
+const renderRoutineItems = async () => {
+  if (!state.currentRoutineDayId) return;
+  const [items, exerciseMap] = await Promise.all([
+    routineItemRepository.listItemsByRoutineDay(state.currentRoutineDayId),
+    getExerciseMap(),
+  ]);
+  routineItemList.innerHTML = '';
+  if (items.length === 0) {
+    const empty = document.createElement('li');
+    empty.className = 'empty-state';
+    empty.textContent = 'Agrega ejercicios para crear la rutina.';
+    routineItemList.appendChild(empty);
+    state.expandedRoutineItemId = null;
+    return;
+  }
+
+  items.forEach((item, index) => {
+    const exercise = exerciseMap.get(item.exerciseId);
+    const itemEl = document.createElement('li');
+    itemEl.className = 'list__item';
+
+    const header = document.createElement('div');
+    header.className = 'list__row';
+
+    const title = document.createElement('div');
+    title.className = 'list__title';
+    title.textContent = exercise ? exercise.name : 'Ejercicio eliminado';
+
+    const actions = document.createElement('div');
+    actions.className = 'list__actions';
+
+    const isExpanded = item.id === state.expandedRoutineItemId;
+    const toggleButton = createIconButton({
+      title: isExpanded ? 'Contraer' : 'Expandir',
+      className: 'icon-button icon-button--toggle',
+      paths: ICONS.chevron,
+    });
+    if (isExpanded) {
+      toggleButton.classList.add('is-open');
+    }
+    toggleButton.addEventListener('click', async () => {
+      state.expandedRoutineItemId = isExpanded ? null : item.id;
+      await renderRoutineItems();
+    });
+
+    const upButton = createIconButton({
+      title: 'Subir',
+      className: 'icon-button',
+      paths: ICONS.up,
+    });
+    upButton.disabled = index === 0;
+    upButton.addEventListener('click', async () => {
+      if (index === 0) return;
+      await routineItemRepository.updateRoutineItem(item.id, { order: items[index - 1].order });
+      await routineItemRepository.updateRoutineItem(items[index - 1].id, { order: item.order });
+      await renderRoutineItems();
+      await renderRoutineDayPreview();
+    });
+
+    const downButton = createIconButton({
+      title: 'Bajar',
+      className: 'icon-button',
+      paths: ICONS.down,
+    });
+    downButton.disabled = index === items.length - 1;
+    downButton.addEventListener('click', async () => {
+      if (index === items.length - 1) return;
+      await routineItemRepository.updateRoutineItem(item.id, { order: items[index + 1].order });
+      await routineItemRepository.updateRoutineItem(items[index + 1].id, { order: item.order });
+      await renderRoutineItems();
+      await renderRoutineDayPreview();
+    });
+
+    const deleteButton = createIconButton({
+      title: 'Eliminar',
+      className: 'icon-button icon-button--danger',
+      paths: ICONS.trash,
+    });
+    deleteButton.addEventListener('click', async () => {
+      if (!confirm('Eliminar este ejercicio de la rutina?')) return;
+      await routineItemRepository.deleteRoutineItem(item.id);
+      await renderRoutineItems();
+      await renderRoutineDayPreview();
+    });
+
+    actions.appendChild(toggleButton);
+    actions.appendChild(upButton);
+    actions.appendChild(downButton);
+    actions.appendChild(deleteButton);
+
+    header.appendChild(title);
+    header.appendChild(actions);
+
+    const targets = document.createElement('div');
+    targets.className = 'form__grid';
+    targets.hidden = !isExpanded;
+
+    const fields = [
+      { label: 'Series', value: item.targetSets, key: 'targetSets', min: 1 },
+      { label: 'Reps min', value: item.targetRepsMin, key: 'targetRepsMin', min: 1 },
+      { label: 'Reps max', value: item.targetRepsMax, key: 'targetRepsMax', min: 1 },
+      { label: 'Descanso (s)', value: item.restSeconds, key: 'restSeconds', min: 0 },
+      { label: 'RIR', value: item.targetRIR, key: 'targetRIR', min: 0 },
+    ];
+
+    fields.forEach((field) => {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'form__field';
+      const label = document.createElement('label');
+      label.className = 'form__label';
+      label.textContent = field.label;
+      const input = document.createElement('input');
+      input.className = 'form__input';
+      input.type = 'number';
+      if (typeof field.min === 'number') {
+        input.min = field.min;
+      }
+      input.value = field.value ?? '';
+      input.addEventListener('change', async (event) => {
+        const value = parseNumber(event.target.value);
+        await routineItemRepository.updateRoutineItem(item.id, { [field.key]: value });
+        await renderRoutineDayPreview();
+      });
+      wrapper.appendChild(label);
+      wrapper.appendChild(input);
+      targets.appendChild(wrapper);
+    });
+
+    const notesField = document.createElement('div');
+    notesField.className = 'form__field';
+    const notesLabel = document.createElement('label');
+    notesLabel.className = 'form__label';
+    notesLabel.textContent = 'Notas';
+    const notesInput = document.createElement('textarea');
+    notesInput.className = 'form__input form__input--textarea';
+    notesInput.rows = 2;
+    notesInput.value = item.notes || '';
+    notesInput.addEventListener('change', async (event) => {
+      await routineItemRepository.updateRoutineItem(item.id, { notes: event.target.value.trim() });
+      await renderRoutineDayPreview();
+    });
+    notesField.appendChild(notesLabel);
+    notesField.appendChild(notesInput);
+
+    targets.appendChild(notesField);
+
+    itemEl.appendChild(header);
+    itemEl.appendChild(targets);
+    routineItemList.appendChild(itemEl);
+  });
+};
+
+const openRoutineDayEditor = async (routineDayId) => {
+  state.currentRoutineDayId = routineDayId;
+  const day = await routineRepository.getRoutineDay(routineDayId);
+  if (!day) {
+    routineEditor.hidden = true;
+    return;
+  }
+  routineEditor.hidden = false;
+  routineEditorTitle.textContent = day.name;
+  routineEditorMeta.textContent = day.notes || 'Sin notas.';
+  routineDayEditName.value = day.name;
+  routineDayEditNotes.value = day.notes || '';
+  setRoutineEditorError('');
+  state.expandedRoutineItemId = null;
+  routineEditFields.hidden = true;
+  if (toggleRoutineEditFields) {
+    toggleRoutineEditFields.classList.remove('is-open');
+    toggleRoutineEditFields.setAttribute('aria-label', 'Mostrar edicion');
+    toggleRoutineEditFields.title = 'Mostrar edicion';
+  }
+  await fillRoutineCategoryFilter();
+  await updateRoutineExerciseOptions();
+  await renderRoutineItems();
+};
+
+const renderRoutineDaySelect = async () => {
+  const days = await routineRepository.listRoutineDays();
+  routineDaySelect.innerHTML = '';
+  if (days.length === 0) {
+    const option = document.createElement('option');
+    option.textContent = 'Sin rutinas';
+    option.value = '';
+    routineDaySelect.appendChild(option);
+    state.currentRoutineDayId = null;
+    routineDaySelect.disabled = true;
+    return;
+  }
+  routineDaySelect.disabled = false;
+  const last = localStorage.getItem(LAST_ROUTINE_DAY_KEY);
+  const selected = days.find((day) => day.id === last) || days[0];
+  days.forEach((day) => {
+    const option = document.createElement('option');
+    option.value = day.id;
+    option.textContent = day.name;
+    if (day.id === selected.id) option.selected = true;
+    routineDaySelect.appendChild(option);
+  });
+  state.currentRoutineDayId = selected.id;
+  localStorage.setItem(LAST_ROUTINE_DAY_KEY, selected.id);
+};
+
+const renderRoutineDayPreview = async () => {
+  routineDayItems.innerHTML = '';
+  routineDaySelectError.textContent = '';
+  if (!state.currentRoutineDayId) {
+    routineDayName.textContent = 'Sin rutina';
+    routineDayNotes.textContent = 'Crea una rutina para empezar.';
+    startSessionButton.disabled = true;
+    return;
+  }
+  const [day, items, exerciseMap] = await Promise.all([
+    routineRepository.getRoutineDay(state.currentRoutineDayId),
+    routineItemRepository.listItemsByRoutineDay(state.currentRoutineDayId),
+    getExerciseMap(),
+  ]);
+  if (!day) {
+    routineDayName.textContent = 'Dia eliminado';
+    routineDayNotes.textContent = '';
+    startSessionButton.disabled = true;
+    return;
+  }
+  routineDayName.textContent = day.name;
+  routineDayNotes.textContent = day.notes || 'Sin notas.';
+  if (items.length === 0) {
+    const empty = document.createElement('li');
+    empty.className = 'empty-state';
+    empty.textContent = 'Sin ejercicios en este dia.';
+    routineDayItems.appendChild(empty);
+  } else {
+    items.forEach((item) => {
+      const exercise = exerciseMap.get(item.exerciseId);
+      const listItem = document.createElement('li');
+      listItem.className = 'list__item';
+      const title = document.createElement('div');
+      title.className = 'list__title';
+      title.textContent = exercise ? exercise.name : 'Ejercicio eliminado';
+      const meta = document.createElement('div');
+      meta.className = 'list__meta';
+      meta.textContent = formatTarget(item);
+      listItem.appendChild(title);
+      listItem.appendChild(meta);
+      routineDayItems.appendChild(listItem);
+    });
+  }
+  startSessionButton.disabled = false;
+};
+
+const updateTrainingActions = async () => {
+  if (!state.currentRoutineDayId) {
+    resumeSessionButton.hidden = true;
+    finishSessionFromHome.hidden = true;
+    return;
+  }
+  const activeSessions = await trainingRepository.listActiveSessionsByRoutineDay(
+    state.currentRoutineDayId
+  );
+  const active = activeSessions.sort((a, b) => b.startedAt.localeCompare(a.startedAt))[0];
+  if (active) {
+    state.activeSessionId = active.id;
+    resumeSessionButton.hidden = false;
+    finishSessionFromHome.hidden = false;
+  } else {
+    state.activeSessionId = null;
+    resumeSessionButton.hidden = true;
+    finishSessionFromHome.hidden = true;
+  }
+};
+
+const getOrCreateSessionLog = async (sessionId, exerciseId) => {
+  const existing = await sessionLogRepository.getLogForSessionExercise(sessionId, exerciseId);
+  if (existing) return existing;
+  const log = {
+    id: createId(),
+    sessionId,
+    exerciseId,
+    sets: [],
+    createdAt: new Date().toISOString(),
+  };
+  await sessionLogRepository.saveLog(log);
+  return log;
+};
+
+const getLastPerformance = async (exerciseId, currentSessionId) => {
+  const logs = await sessionLogRepository.listLogsByExercise(exerciseId);
+  const filtered = logs.filter((log) => log.sessionId !== currentSessionId);
+  if (filtered.length === 0) return null;
+  const sessions = await Promise.all(
+    filtered.map(async (log) => ({
+      log,
+      session: await trainingRepository.getSession(log.sessionId),
+    }))
+  );
+  const valid = sessions.filter((entry) => entry.session);
+  if (valid.length === 0) return null;
+  valid.sort((a, b) => b.session.startedAt.localeCompare(a.session.startedAt));
+  const latest = valid[0];
+  const sets = latest.log.sets || [];
+  if (sets.length === 0) return null;
+  const lastSet = [...sets].reverse().find((set) => set.isDone) || sets[sets.length - 1];
+  if (!lastSet) return null;
+  return {
+    summary: `${lastSet.weight ?? '-'}kg x ${lastSet.reps ?? '-'}`,
+    date: latest.session.startedAt,
+  };
+};
+
+const renderWorkoutView = async (sessionId) => {
+  workoutError.textContent = '';
+  const session = await trainingRepository.getSession(sessionId);
+  if (!session) {
+    workoutError.textContent = 'Sesion no encontrada.';
+    return;
+  }
+  state.activeSessionId = session.id;
+  const day = await routineRepository.getRoutineDay(session.routineDayId);
+  workoutTitle.textContent = day ? day.name : 'Dia eliminado';
+  workoutMeta.textContent = `Inicio: ${formatDateTime(session.startedAt)}`;
+  const [items, exerciseMap] = await Promise.all([
+    routineItemRepository.listItemsByRoutineDay(session.routineDayId),
+    getExerciseMap(),
+  ]);
+  workoutExerciseList.innerHTML = '';
+  if (items.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = 'No hay ejercicios en este dia.';
+    workoutExerciseList.appendChild(empty);
+    return;
+  }
+
+  for (const item of items) {
+    const exercise = exerciseMap.get(item.exerciseId);
+    const log = await getOrCreateSessionLog(session.id, item.exerciseId);
+    const card = document.createElement('div');
+    card.className = 'workout-card';
+
+    const header = document.createElement('div');
+    header.className = 'workout-card__header';
+    const title = document.createElement('div');
+    title.className = 'workout-card__title';
+    title.textContent = exercise ? exercise.name : 'Ejercicio eliminado';
+    const target = document.createElement('span');
+    target.className = 'pill';
+    target.textContent = formatTarget(item) || 'Objetivo';
+    header.appendChild(title);
+    header.appendChild(target);
+
+    const meta = document.createElement('div');
+    meta.className = 'workout-card__meta';
+    meta.textContent = item.notes ? `Notas: ${item.notes}` : 'Sin notas.';
+
+    const lastPerformance = document.createElement('div');
+    lastPerformance.className = 'workout-card__meta';
+    lastPerformance.textContent = 'Ultimo: ...';
+    const last = await getLastPerformance(item.exerciseId, session.id);
+    if (last) {
+      lastPerformance.textContent = `Ultimo: ${last.summary} (${formatDateTime(last.date)})`;
+    } else {
+      lastPerformance.textContent = 'Ultimo: sin registros';
+    }
+
+    const setList = document.createElement('div');
+    setList.className = 'set-list';
+
+    const renderSetRows = () => {
+      setList.innerHTML = '';
+      (log.sets || []).forEach((set, index) => {
+        const row = document.createElement('div');
+        row.className = 'set-row';
+
+        const label = document.createElement('div');
+        label.className = 'set-row__label';
+        label.textContent = `#${index + 1}`;
+
+        const weightInput = document.createElement('input');
+        weightInput.className = 'set-input';
+        weightInput.type = 'number';
+        weightInput.placeholder = 'kg';
+        weightInput.value = set.weight ?? '';
+        weightInput.addEventListener('input', async (event) => {
+          set.weight = parseNumber(event.target.value);
+          await sessionLogRepository.saveLog(log);
+        });
+
+        const repsInput = document.createElement('input');
+        repsInput.className = 'set-input';
+        repsInput.type = 'number';
+        repsInput.placeholder = 'reps';
+        repsInput.value = set.reps ?? '';
+        repsInput.addEventListener('input', async (event) => {
+          set.reps = parseNumber(event.target.value);
+          await sessionLogRepository.saveLog(log);
+        });
+
+        const rirInput = document.createElement('input');
+        rirInput.className = 'set-input';
+        rirInput.type = 'number';
+        rirInput.placeholder = 'rir';
+        rirInput.value = set.rir ?? '';
+        rirInput.addEventListener('input', async (event) => {
+          set.rir = parseNumber(event.target.value);
+          await sessionLogRepository.saveLog(log);
+        });
+
+        const doneWrap = document.createElement('label');
+        doneWrap.className = 'set-checkbox';
+        const doneInput = document.createElement('input');
+        doneInput.type = 'checkbox';
+        doneInput.checked = Boolean(set.isDone);
+        doneInput.addEventListener('change', async (event) => {
+          set.isDone = event.target.checked;
+          await sessionLogRepository.saveLog(log);
+        });
+        doneWrap.appendChild(doneInput);
+
+        row.appendChild(label);
+        row.appendChild(weightInput);
+        row.appendChild(repsInput);
+        row.appendChild(rirInput);
+        row.appendChild(doneWrap);
+        setList.appendChild(row);
+      });
+    };
+
+    renderSetRows();
+
+    const addSetButton = document.createElement('button');
+    addSetButton.className = 'button button--primary';
+    addSetButton.textContent = '+ Anadir set';
+    addSetButton.addEventListener('click', async () => {
+      const nextNumber = (log.sets || []).length + 1;
+      log.sets.push({
+        setNumber: nextNumber,
+        weight: null,
+        reps: null,
+        rir: null,
+        isDone: false,
+        createdAt: new Date().toISOString(),
+      });
+      await sessionLogRepository.saveLog(log);
+      renderSetRows();
+    });
+
+    card.appendChild(header);
+    card.appendChild(meta);
+    card.appendChild(lastPerformance);
+    card.appendChild(setList);
+    card.appendChild(addSetButton);
+    workoutExerciseList.appendChild(card);
+  }
+};
+
+const refreshTrainingHome = async () => {
+  await renderRoutineDaySelect();
+  await renderRoutineDayPreview();
+  await updateTrainingActions();
+};
+
+const updateRoutineSelection = async () => {
+  state.currentRoutineDayId = routineDaySelect.value || null;
+  if (state.currentRoutineDayId) {
+    localStorage.setItem(LAST_ROUTINE_DAY_KEY, state.currentRoutineDayId);
+  }
+  await renderRoutineDayPreview();
+  await updateTrainingActions();
+};
+
+const isExerciseUsed = async (exerciseId) => {
+  const [items, logs] = await Promise.all([
+    getAllFromStore('routineItems'),
+    sessionLogRepository.listLogsByExercise(exerciseId),
+  ]);
+  return items.some((item) => item.exerciseId === exerciseId) || logs.length > 0;
+};
+
 newCategoryButton.addEventListener('click', () => {
   showCategoryForm();
 });
@@ -663,10 +1757,248 @@ exerciseSearch.addEventListener('input', async (event) => {
   await renderCategoryDetail();
 });
 
+newRoutineDayButton.addEventListener('click', () => {
+  showRoutineDayForm();
+});
+
+cancelRoutineDay.addEventListener('click', hideRoutineDayForm);
+
+routineDayForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  routineDayError.textContent = '';
+  try {
+    const day = await routineRepository.createRoutineDay({
+      name: routineDayNameInput.value,
+      notes: routineDayNotesInput.value.trim(),
+    });
+    hideRoutineDayForm();
+    await renderRoutineDayList();
+    await openRoutineDayEditor(day.id);
+    await refreshTrainingHome();
+  } catch (error) {
+    routineDayError.textContent = error.message;
+  }
+});
+
+saveRoutineDayEdits.addEventListener('click', async (event) => {
+  event.preventDefault();
+  if (!state.currentRoutineDayId) return;
+  setRoutineEditorError('');
+  try {
+    const updated = await routineRepository.updateRoutineDay(state.currentRoutineDayId, {
+      name: routineDayEditName.value,
+      notes: routineDayEditNotes.value.trim(),
+    });
+    routineEditorTitle.textContent = updated.name;
+    routineEditorMeta.textContent = updated.notes || 'Sin notas.';
+    await renderRoutineDayList();
+    await refreshTrainingHome();
+  } catch (error) {
+    setRoutineEditorError(error.message);
+  }
+});
+
+duplicateRoutineDay.addEventListener('click', async (event) => {
+  event.preventDefault();
+  if (!state.currentRoutineDayId) return;
+  try {
+    const copy = await routineRepository.duplicateRoutineDay(state.currentRoutineDayId);
+    await renderRoutineDayList();
+    await openRoutineDayEditor(copy.id);
+    await refreshTrainingHome();
+  } catch (error) {
+    setRoutineEditorError(error.message);
+  }
+});
+
+deleteRoutineDay.addEventListener('click', async (event) => {
+  event.preventDefault();
+  if (!state.currentRoutineDayId) return;
+  if (!confirm('Eliminar este dia y sus ejercicios?')) return;
+  await routineRepository.deleteRoutineDay(state.currentRoutineDayId);
+  state.currentRoutineDayId = null;
+  routineEditor.hidden = true;
+  await renderRoutineDayList();
+  await refreshTrainingHome();
+});
+
+routineExerciseSearch.addEventListener('input', async (event) => {
+  state.routineExerciseSearch = event.target.value.trim().toLowerCase();
+  await updateRoutineExerciseOptions();
+});
+
+routineCategoryFilter.addEventListener('change', async (event) => {
+  state.routineCategoryFilter = event.target.value;
+  await updateRoutineExerciseOptions();
+});
+
+addRoutineItem.addEventListener('click', async (event) => {
+  event.preventDefault();
+  if (!state.currentRoutineDayId) return;
+  if (!routineExerciseSelect.value) return;
+  await routineItemRepository.createRoutineItem({
+    routineDayId: state.currentRoutineDayId,
+    exerciseId: routineExerciseSelect.value,
+  });
+  state.expandedRoutineItemId = null;
+  await renderRoutineItems();
+  await renderRoutineDayPreview();
+});
+
+if (toggleRoutineEditFields && routineEditFields) {
+  toggleRoutineEditFields.addEventListener('click', (event) => {
+    event.preventDefault();
+    const shouldShow = routineEditFields.hidden;
+    routineEditFields.hidden = !shouldShow;
+    toggleRoutineEditFields.classList.toggle('is-open', shouldShow);
+    toggleRoutineEditFields.setAttribute('aria-label', shouldShow ? 'Ocultar edicion' : 'Mostrar edicion');
+    toggleRoutineEditFields.title = shouldShow ? 'Ocultar edicion' : 'Mostrar edicion';
+    if (shouldShow) {
+      routineDayEditName.focus();
+    }
+  });
+}
+
+routineDaySelect.addEventListener('change', updateRoutineSelection);
+
+startSessionButton.addEventListener('click', async () => {
+  routineDaySelectError.textContent = '';
+  if (!state.currentRoutineDayId) {
+    routineDaySelectError.textContent = 'Selecciona un dia.';
+    return;
+  }
+  if (state.activeSessionId) {
+    await renderWorkoutView(state.activeSessionId);
+    setView('workout');
+    return;
+  }
+  const items = await routineItemRepository.listItemsByRoutineDay(state.currentRoutineDayId);
+  if (items.length === 0) {
+    routineDaySelectError.textContent = 'Este dia no tiene ejercicios.';
+    return;
+  }
+  const session = await trainingRepository.createSession(state.currentRoutineDayId);
+  state.activeSessionId = session.id;
+  await updateTrainingActions();
+  await renderWorkoutView(session.id);
+  setView('workout');
+});
+
+resumeSessionButton.addEventListener('click', async () => {
+  if (!state.activeSessionId) return;
+  await renderWorkoutView(state.activeSessionId);
+  setView('workout');
+});
+
+finishSessionFromHome.addEventListener('click', async () => {
+  if (!state.activeSessionId) return;
+  if (!confirm('Finalizar la sesion activa?')) return;
+  await trainingRepository.updateSession(state.activeSessionId, {
+    finishedAt: new Date().toISOString(),
+  });
+  state.activeSessionId = null;
+  await updateTrainingActions();
+});
+
+backToTrain.addEventListener('click', async () => {
+  setView('train');
+  await refreshTrainingHome();
+});
+
+finishSessionButton.addEventListener('click', async () => {
+  if (!state.activeSessionId) return;
+  if (!confirm('Finalizar la sesion?')) return;
+  await trainingRepository.updateSession(state.activeSessionId, {
+    finishedAt: new Date().toISOString(),
+  });
+  state.activeSessionId = null;
+  setView('train');
+  await refreshTrainingHome();
+});
+
+cancelSessionButton.addEventListener('click', async () => {
+  if (!state.activeSessionId) return;
+  if (!confirm('Cancelar esta sesion y borrar sus registros?')) return;
+  await trainingRepository.deleteSession(state.activeSessionId);
+  await sessionLogRepository.deleteLogsBySession(state.activeSessionId);
+  state.activeSessionId = null;
+  setView('train');
+  await refreshTrainingHome();
+});
+
+exportData.addEventListener('click', async () => {
+  const stores = [
+    'categories',
+    'exercises',
+    'routineDays',
+    'routineItems',
+    'trainingSessions',
+    'sessionExerciseLogs',
+  ];
+  const payload = { exportedAt: new Date().toISOString(), version: 2, data: {} };
+  for (const store of stores) {
+    payload.data[store] = await getAllFromStore(store);
+  }
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `gym-backup-${Date.now()}.json`;
+  link.click();
+  URL.revokeObjectURL(url);
+});
+
+importData.addEventListener('click', () => {
+  importFile.click();
+});
+
+importFile.addEventListener('change', async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+  const text = await file.text();
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch (error) {
+    alert('Archivo invalido.');
+    return;
+  }
+  if (!parsed || !parsed.data) {
+    alert('Formato incorrecto.');
+    return;
+  }
+  const stores = [
+    'categories',
+    'exercises',
+    'routineDays',
+    'routineItems',
+    'trainingSessions',
+    'sessionExerciseLogs',
+  ];
+  for (const store of stores) {
+    await clearStore(store);
+    const items = parsed.data[store] || [];
+    for (const item of items) {
+      await putInStore(store, item);
+    }
+  }
+  await refreshTrainingHome();
+  await renderCategories();
+  await renderRoutineDayList();
+  importFile.value = '';
+  alert('Datos importados.');
+});
+
 navButtons.forEach((button) => {
   button.addEventListener('click', () => {
     const route = button.dataset.route;
     setView(route);
+    if (route === 'train') {
+      refreshTrainingHome();
+    }
+    if (route === 'routines') {
+      renderRoutineDayList();
+    }
   });
 });
 
@@ -692,11 +2024,21 @@ if ('serviceWorker' in navigator) {
 
 const startApp = async () => {
   loadTheme();
-  await seedData();
-  await renderCategories();
-  const initialRoute = location.hash.replace('#', '') || 'exercises';
+  const initialRoute = location.hash.replace('#', '') || 'train';
   setView(initialRoute === 'category' ? 'exercises' : initialRoute);
   updateStatus();
+  try {
+    await seedData();
+    await seedRoutineData();
+    await seedTrainingData();
+    await renderCategories();
+    await renderRoutineDayList();
+    await refreshTrainingHome();
+  } catch (error) {
+    console.error('No se pudo inicializar la base local.', error);
+    statusBadge.textContent = 'Error de datos';
+    statusBadge.style.borderColor = 'var(--danger)';
+  }
 };
 
 startApp();

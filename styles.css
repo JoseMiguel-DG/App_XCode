@@ -30,6 +30,10 @@
   padding: 0;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body {
   background: var(--bg);
   color: var(--text);
@@ -73,7 +77,7 @@ body {
 
 .app__nav {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
   gap: 10px;
 }
 
@@ -159,6 +163,42 @@ body {
   font-weight: 600;
   cursor: pointer;
   box-shadow: var(--shadow);
+}
+
+.icon-button {
+  border: 1px solid var(--border);
+  background: var(--bg-alt);
+  color: var(--text);
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-button svg {
+  width: 16px;
+  height: 16px;
+}
+
+.icon-button--danger {
+  background: var(--danger);
+  color: #fff;
+  border: none;
+}
+
+.icon-button--toggle svg {
+  transition: transform 0.2s ease;
+}
+
+.icon-button--toggle.is-open svg {
+  transform: rotate(180deg);
 }
 
 .button--primary {
@@ -250,6 +290,11 @@ body {
   gap: 10px;
 }
 
+.list--compact .list__item {
+  padding: 10px 12px;
+  gap: 6px;
+}
+
 .list__item {
   background: var(--bg-alt);
   border-radius: 14px;
@@ -294,6 +339,83 @@ body {
   padding: 4px 8px;
   background: rgba(12, 102, 234, 0.12);
   border-radius: 999px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.workout-card {
+  background: var(--bg-alt);
+  padding: 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.workout-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.workout-card__title {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.workout-card__meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.set-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.set-row {
+  display: grid;
+  grid-template-columns: 48px repeat(3, 1fr) 56px;
+  gap: 8px;
+  align-items: center;
+}
+
+.set-row__label {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.set-input {
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--bg-alt);
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.set-checkbox {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(12, 102, 234, 0.12);
+  font-size: 0.75rem;
+  font-weight: 600;
 }
 
 .empty-state {
