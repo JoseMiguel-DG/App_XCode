@@ -73,6 +73,13 @@ const workoutError = document.getElementById('workoutError');
 const workoutExerciseList = document.getElementById('workoutExerciseList');
 const finishSessionButton = document.getElementById('finishSessionButton');
 const cancelSessionButton = document.getElementById('cancelSessionButton');
+const historyList = document.getElementById('historyList');
+const historyDetail = document.getElementById('historyDetail');
+const historyBack = document.getElementById('historyBack');
+const historyDelete = document.getElementById('historyDelete');
+const historyDetailTitle = document.getElementById('historyDetailTitle');
+const historyDetailMeta = document.getElementById('historyDetailMeta');
+const historyDetailList = document.getElementById('historyDetailList');
 
 const exportData = document.getElementById('exportData');
 const importData = document.getElementById('importData');
@@ -137,6 +144,7 @@ const state = {
   routineCategoryFilter: 'all',
   activeSessionId: null,
   expandedRoutineItemId: null,
+  currentHistorySessionId: null,
 };
 
 const createId = () =>
@@ -1339,6 +1347,9 @@ const setView = (route) => {
   if (route === 'home') {
     renderHomeDashboard();
   }
+  if (route === 'history') {
+    renderHistoryList();
+  }
   if (route === 'routines') {
     routineEditor.hidden = true;
     state.expandedRoutineItemId = null;
@@ -1616,6 +1627,149 @@ const renderHomeDashboard = async () => {
   } else {
     homeNextSessionCard.hidden = true;
   }
+};
+
+const getSessionVolume = (logs) =>
+  logs.reduce((total, log) => {
+    const sets = log.sets || [];
+    const volume = sets.reduce((acc, set) => {
+      if (!set.isDone) return acc;
+      if (set.weight == null || set.reps == null) return acc;
+      return acc + set.weight * set.reps;
+    }, 0);
+    return total + volume;
+  }, 0);
+
+const renderHistoryList = async () => {
+  if (!historyList) return;
+  const [sessions, routineDays] = await Promise.all([
+    trainingRepository.listAllSessions(),
+    routineRepository.listRoutineDays(),
+  ]);
+  const finished = sessions.filter((session) => session.finishedAt);
+  historyList.innerHTML = '';
+  if (historyDetail) historyDetail.hidden = true;
+  state.currentHistorySessionId = null;
+
+  if (finished.length === 0) {
+    const empty = document.createElement('li');
+    empty.className = 'empty-state';
+    empty.textContent = 'No hay sesiones finalizadas.';
+    historyList.appendChild(empty);
+    return;
+  }
+
+  const routineMap = new Map(routineDays.map((day) => [day.id, day]));
+  finished
+    .sort((a, b) => new Date(b.finishedAt) - new Date(a.finishedAt))
+    .forEach((session) => {
+      const item = document.createElement('li');
+      item.className = 'list__item';
+
+      const row = document.createElement('div');
+      row.className = 'list__row';
+
+      const info = document.createElement('div');
+      const title = document.createElement('div');
+      title.className = 'list__title';
+      const routine = routineMap.get(session.routineDayId);
+      title.textContent = routine ? routine.name : 'Sesion';
+
+      const meta = document.createElement('div');
+      meta.className = 'list__meta';
+      meta.textContent = `Finalizado: ${formatDateTime(session.finishedAt)}`;
+
+      info.appendChild(title);
+      info.appendChild(meta);
+
+      const actions = document.createElement('div');
+      actions.className = 'list__actions';
+      const viewButton = document.createElement('button');
+      viewButton.className = 'button button--primary';
+      viewButton.textContent = 'Ver';
+      viewButton.addEventListener('click', () => openHistorySession(session.id));
+      actions.appendChild(viewButton);
+
+      row.appendChild(info);
+      row.appendChild(actions);
+      item.appendChild(row);
+      historyList.appendChild(item);
+    });
+};
+
+const openHistorySession = async (sessionId) => {
+  if (!historyDetail || !historyDetailList) return;
+  const session = await trainingRepository.getSession(sessionId);
+  if (!session) return;
+  state.currentHistorySessionId = sessionId;
+  const [routine, logs, exerciseMap] = await Promise.all([
+    routineRepository.getRoutineDay(session.routineDayId),
+    sessionLogRepository.listLogsBySession(sessionId),
+    getExerciseMap(),
+  ]);
+
+  historyDetail.hidden = false;
+  historyDetailTitle.textContent = routine ? routine.name : 'Sesion';
+  const volume = getSessionVolume(logs);
+  historyDetailMeta.textContent = `${formatDateTime(session.finishedAt)} · Volumen ${formatNumber(
+    volume,
+    0
+  )} kg`;
+
+  historyDetailList.innerHTML = '';
+  if (logs.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = 'Sin registros.';
+    historyDetailList.appendChild(empty);
+    return;
+  }
+
+  logs.forEach((log) => {
+    const exercise = exerciseMap.get(log.exerciseId);
+    const card = document.createElement('div');
+    card.className = 'workout-card';
+
+    const header = document.createElement('div');
+    header.className = 'workout-card__header';
+    const title = document.createElement('div');
+    title.className = 'workout-card__title';
+    title.textContent = exercise ? exercise.name : 'Ejercicio eliminado';
+    header.appendChild(title);
+
+    const meta = document.createElement('div');
+    meta.className = 'workout-card__meta';
+    meta.textContent = `${(log.sets || []).length} sets`;
+
+    const list = document.createElement('div');
+    list.className = 'set-list';
+    (log.sets || []).forEach((set, index) => {
+      const row = document.createElement('div');
+      row.className = 'set-row set-row--history';
+      const label = document.createElement('div');
+      label.className = 'set-row__label';
+      label.textContent = `#${index + 1}`;
+      const weight = document.createElement('div');
+      weight.className = 'set-row__label';
+      weight.textContent = `${set.weight ?? '-'} kg`;
+      const reps = document.createElement('div');
+      reps.className = 'set-row__label';
+      reps.textContent = `${set.reps ?? '-'} reps`;
+      const rir = document.createElement('div');
+      rir.className = 'set-row__label';
+      rir.textContent = `RIR ${set.rir ?? '-'}`;
+      row.appendChild(label);
+      row.appendChild(weight);
+      row.appendChild(reps);
+      row.appendChild(rir);
+      list.appendChild(row);
+    });
+
+    card.appendChild(header);
+    card.appendChild(meta);
+    card.appendChild(list);
+    historyDetailList.appendChild(card);
+  });
 };
 
 const getExerciseMap = async () => {
@@ -3071,6 +3225,31 @@ if (cloudDownload) {
 if (homeGoTrain) {
   homeGoTrain.addEventListener('click', async () => {
     setView('train');
+    await refreshTrainingHome();
+  });
+}
+
+if (historyBack) {
+  historyBack.addEventListener('click', () => {
+    if (historyDetail) historyDetail.hidden = true;
+    state.currentHistorySessionId = null;
+  });
+}
+
+if (historyDelete) {
+  historyDelete.addEventListener('click', async () => {
+    if (!state.currentHistorySessionId) return;
+    const sessionTitle = historyDetailTitle ? historyDetailTitle.textContent : 'sesion';
+    const ok = await confirmDialog(`Eliminar ${sessionTitle} y sus registros?`, {
+      title: 'Eliminar sesion',
+      confirmText: 'Eliminar',
+      danger: true,
+    });
+    if (!ok) return;
+    await trainingRepository.deleteSession(state.currentHistorySessionId);
+    await sessionLogRepository.deleteLogsBySession(state.currentHistorySessionId);
+    state.currentHistorySessionId = null;
+    await renderHistoryList();
     await refreshTrainingHome();
   });
 }

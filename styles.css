@@ -849,6 +849,10 @@ body {
   align-items: center;
 }
 
+.set-row--history {
+  grid-template-columns: 48px repeat(3, 1fr);
+}
+
 .set-row__label {
   font-size: 0.85rem;
   color: var(--muted);

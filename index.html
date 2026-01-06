@@ -90,6 +90,7 @@
         <button class="nav__button" data-route="home">Inicio</button>
         <button class="nav__button" data-route="train">Entrenar</button>
         <button class="nav__button" data-route="routines">Rutinas</button>
+        <button class="nav__button" data-route="history">Historial</button>
         <button class="nav__button" data-route="exercises">Biblioteca</button>
         <button class="nav__button" data-route="settings">Ajustes</button>
       </nav>
@@ -239,6 +240,29 @@
               Finalizar sesion
             </button>
           </div>
+        </section>
+
+        <section class="panel" data-view="history" hidden>
+          <div class="panel__header">
+            <div>
+              <h2>Historial</h2>
+              <p class="panel__subtitle">Sesiones pasadas y registros guardados.</p>
+            </div>
+          </div>
+
+          <div class="card" id="historyDetail" hidden>
+            <div class="panel__header panel__header--tight">
+              <div>
+                <button class="button button--ghost" id="historyBack">Volver</button>
+                <h3 id="historyDetailTitle">Sesion</h3>
+                <p class="panel__subtitle" id="historyDetailMeta"></p>
+              </div>
+              <button class="button button--danger" id="historyDelete">Eliminar</button>
+            </div>
+            <div class="stack" id="historyDetailList"></div>
+          </div>
+
+          <ul class="list" id="historyList"></ul>
         </section>
 
         <section class="panel" data-view="routines" hidden>
