@@ -80,6 +80,7 @@
       </header>
 
       <nav class="app__nav">
+        <button class="nav__button" data-route="home">Inicio</button>
         <button class="nav__button" data-route="train">Entrenar</button>
         <button class="nav__button" data-route="routines">Rutinas</button>
         <button class="nav__button" data-route="exercises">Biblioteca</button>
@@ -126,6 +127,35 @@
                 <button class="button button--ghost" id="cloudSignup">Crear cuenta</button>
               </div>
             </div>
+          </div>
+        </section>
+
+        <section class="panel" data-view="home" hidden>
+          <div class="panel__header">
+            <div>
+              <h2>Inicio</h2>
+              <p class="panel__subtitle">Tu resumen rapido de entrenamiento.</p>
+            </div>
+          </div>
+
+          <div class="card">
+            <p class="card__title">Objetivo de hoy</p>
+            <p class="card__text">
+              Elige una rutina y prepara tus pesos objetivo antes de empezar.
+            </p>
+          </div>
+
+          <div class="card">
+            <p class="card__title">Tip del dia</p>
+            <p class="card__text">
+              Prioriza el rango completo y un ritmo controlado para mejorar la tecnica.
+            </p>
+          </div>
+
+          <div class="card">
+            <p class="card__title">Atajo</p>
+            <p class="card__text">Ve directo a Entrenar y retoma tu ultima sesion.</p>
+            <button class="button button--primary" id="homeGoTrain">Ir a Entrenar</button>
           </div>
         </section>
 

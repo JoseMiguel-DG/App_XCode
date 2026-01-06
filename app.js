@@ -94,6 +94,7 @@ const cloudLogout = document.getElementById('cloudLogout');
 const cloudUpload = document.getElementById('cloudUpload');
 const cloudDownload = document.getElementById('cloudDownload');
 const appContainer = document.querySelector('.app');
+const homeGoTrain = document.getElementById('homeGoTrain');
 
 const STORAGE_DB = 'exercise-library-db';
 const THEME_KEY = 'personal-pwa-theme';
@@ -2514,6 +2515,8 @@ const updateCloudUI = (user) => {
     }
     if (cloudSessionPanel) cloudSessionPanel.hidden = false;
     if (cloudAuthForm) cloudAuthForm.hidden = true;
+    const route = location.hash.replace('#', '') || 'home';
+    setView(route === 'auth' ? 'home' : route);
   } else {
     setCloudStatus('No autenticado.', 'warn');
     setCloudControls(false);
@@ -2759,6 +2762,13 @@ if (cloudDownload) {
   });
 }
 
+if (homeGoTrain) {
+  homeGoTrain.addEventListener('click', async () => {
+    setView('train');
+    await refreshTrainingHome();
+  });
+}
+
 navButtons.forEach((button) => {
   button.addEventListener('click', () => {
     const route = button.dataset.route;
@@ -2800,7 +2810,8 @@ if ('serviceWorker' in navigator) {
 const startApp = async () => {
   loadTheme();
   await initCloudAuth();
-  const initialRoute = location.hash.replace('#', '') || 'train';
+  const hashRoute = location.hash.replace('#', '');
+  const initialRoute = isAuthenticated ? (hashRoute || 'home') : 'auth';
   setView(initialRoute === 'category' ? 'exercises' : initialRoute);
   updateStatus();
   try {
