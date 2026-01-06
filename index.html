@@ -6,9 +6,9 @@
     <meta name="theme-color" content="#0c66ea" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Mi PWA" />
+    <meta name="apple-mobile-web-app-title" content="Mi Biblioteca" />
 
-    <title>Mi PWA Personal</title>
+    <title>Biblioteca de Ejercicios</title>
 
     <link rel="manifest" href="manifest.json" />
     <link rel="icon" href="assets/icons/icon-192.png" sizes="192x192" />
@@ -74,47 +74,148 @@
       <header class="app__header">
         <div>
           <p class="app__subtitle">PWA privada</p>
-          <h1 class="app__title">Mi Panel Personal</h1>
+          <h1 class="app__title">Biblioteca de Ejercicios</h1>
         </div>
         <span class="status" id="statusBadge">Offline</span>
       </header>
 
       <nav class="app__nav">
-        <button class="nav__button" data-route="home">Inicio</button>
-        <button class="nav__button" data-route="notes">Notas</button>
+        <button class="nav__button" data-route="exercises">Ejercicios</button>
         <button class="nav__button" data-route="settings">Ajustes</button>
       </nav>
 
       <main class="app__content">
-        <section class="panel" data-view="home">
-          <h2>Resumen rápido</h2>
-          <div class="card">
-            <p class="card__title">Bienvenido 👋</p>
-            <p class="card__text">
-              Esta PWA funciona offline, guarda tus datos localmente y está lista
-              para ampliarse.
-            </p>
+        <section class="panel" data-view="exercises">
+          <div class="panel__header">
+            <div>
+              <h2>Ejercicios</h2>
+              <p class="panel__subtitle">
+                Gestiona tus categorías y ejercicios guardados localmente.
+              </p>
+            </div>
+            <button class="button button--primary" id="newCategoryButton">+ Nueva categoría</button>
           </div>
-          <div class="card">
-            <p class="card__title">Recordatorio rápido</p>
-            <p class="card__text" id="nextNote">Crea una nota para verla aquí.</p>
-          </div>
+
+          <form class="form" id="categoryForm" hidden>
+            <div class="form__row">
+              <div class="form__field">
+                <label class="form__label" for="categoryName">Nombre de la categoría</label>
+                <input
+                  class="form__input"
+                  id="categoryName"
+                  type="text"
+                  placeholder="Ej. Pecho"
+                  maxlength="40"
+                  required
+                />
+                <p class="form__error" id="categoryError"></p>
+              </div>
+              <div class="form__actions">
+                <button class="button button--primary" type="submit">Guardar</button>
+                <button class="button button--ghost" type="button" id="cancelCategory">Cancelar</button>
+              </div>
+            </div>
+          </form>
+
+          <ul class="list" id="categoryList"></ul>
         </section>
 
-        <section class="panel" data-view="notes" hidden>
-          <h2>Notas rápidas</h2>
-          <form class="note-form" id="noteForm">
+        <section class="panel" data-view="category" hidden>
+          <div class="panel__header">
+            <div>
+              <button class="button button--ghost" id="backToCategories">← Volver</button>
+              <h2 id="categoryTitle">Categoría</h2>
+              <p class="panel__subtitle" id="categoryMeta"></p>
+            </div>
+            <div class="panel__actions">
+              <button class="button button--ghost" id="renameCategory">Renombrar</button>
+              <button class="button button--danger" id="deleteCategory">Eliminar</button>
+            </div>
+          </div>
+          <p class="form__error" id="categoryDetailError"></p>
+
+          <div class="search">
             <input
-              class="note-form__input"
-              id="noteInput"
-              type="text"
-              placeholder="Escribe una nota..."
-              maxlength="120"
-              required
+              class="form__input"
+              id="exerciseSearch"
+              type="search"
+              placeholder="Buscar ejercicio..."
             />
-            <button class="note-form__button" type="submit">Guardar</button>
+          </div>
+
+          <div class="panel__header panel__header--tight">
+            <h3>Ejercicios</h3>
+            <button class="button button--primary" id="newExerciseButton">+ Nuevo ejercicio</button>
+          </div>
+
+          <form class="form" id="exerciseForm" hidden>
+            <h4 class="form__title" id="exerciseFormTitle">Nuevo ejercicio</h4>
+            <input type="hidden" id="exerciseId" />
+            <div class="form__grid">
+              <div class="form__field">
+                <label class="form__label" for="exerciseName">Nombre*</label>
+                <input
+                  class="form__input"
+                  id="exerciseName"
+                  type="text"
+                  placeholder="Ej. Press banca con barra"
+                  maxlength="60"
+                  required
+                />
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="exerciseDescription">Descripción</label>
+                <textarea
+                  class="form__input form__input--textarea"
+                  id="exerciseDescription"
+                  rows="2"
+                  placeholder="Opcional"
+                ></textarea>
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="exercisePrimaryMuscle">Grupo muscular principal</label>
+                <input
+                  class="form__input"
+                  id="exercisePrimaryMuscle"
+                  type="text"
+                  placeholder="Ej. Pecho"
+                />
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="exerciseEquipment">Equipamiento</label>
+                <input
+                  class="form__input"
+                  id="exerciseEquipment"
+                  type="text"
+                  placeholder="Ej. Barra"
+                />
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="exerciseTags">Tags (separados por coma)</label>
+                <input
+                  class="form__input"
+                  id="exerciseTags"
+                  type="text"
+                  placeholder="Ej. fuerza, básico"
+                />
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="exerciseCategorySelect">Categoría</label>
+                <select class="form__input" id="exerciseCategorySelect"></select>
+              </div>
+            </div>
+            <p class="form__error" id="exerciseError"></p>
+            <div class="form__actions">
+              <button class="button button--primary" type="submit" id="saveExerciseButton">
+                Guardar ejercicio
+              </button>
+              <button class="button button--ghost" type="button" id="cancelExercise">
+                Cancelar
+              </button>
+            </div>
           </form>
-          <ul class="note-list" id="noteList"></ul>
+
+          <ul class="list" id="exerciseList"></ul>
         </section>
 
         <section class="panel" data-view="settings" hidden>
@@ -122,12 +223,12 @@
           <div class="card">
             <p class="card__title">Tema</p>
             <p class="card__text">Cambia el aspecto sin salir de la app.</p>
-            <button class="action" id="themeToggle">Alternar modo</button>
+            <button class="button button--primary" id="themeToggle">Alternar modo</button>
           </div>
           <div class="card">
             <p class="card__title">Datos locales</p>
-            <p class="card__text">Tus notas se guardan solo en este dispositivo.</p>
-            <button class="action action--danger" id="clearNotes">Borrar notas</button>
+            <p class="card__text">La biblioteca se guarda solo en este dispositivo.</p>
+            <button class="button button--danger" id="resetLibrary">Borrar biblioteca</button>
           </div>
         </section>
       </main>
