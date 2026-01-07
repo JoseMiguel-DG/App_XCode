@@ -181,6 +181,8 @@ const CLOUD_LOCAL_UPDATED_KEY = 'cloud-local-updated-at';
 const CLOUD_LAST_UPLOADED_KEY = 'cloud-last-uploaded-at';
 const CLOUD_POLL_INTERVAL_MS = 2000;
 const CLOUD_SYNC_DELAY_MS = 100;
+const CLOUD_SYNC_TIMEOUT_MS = 12000;
+const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
 const APP_VERSION = '0.9.1';
@@ -3072,6 +3074,30 @@ const setCloudLastSync = (label) => {
   }
 };
 
+const flashSyncIndicator = () => {
+  if (!statusBadge) return;
+  statusBadge.classList.add('is-sync');
+  setTimeout(() => {
+    statusBadge.classList.remove('is-sync');
+  }, 800);
+};
+
+const withTimeout = (promise, ms) =>
+  new Promise((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error('Tiempo de espera de sincronizacion.'));
+    }, ms);
+    promise
+      .then((value) => {
+        clearTimeout(timer);
+        resolve(value);
+      })
+      .catch((error) => {
+        clearTimeout(timer);
+        reject(error);
+      });
+  });
+
 const getLastUploadedAt = () => {
   const value = localStorage.getItem(CLOUD_LAST_UPLOADED_KEY);
   return value ? Date.parse(value) : null;
@@ -3103,27 +3129,33 @@ const performCloudUpload = async () => {
     }
     const payload = await getExportPayload();
     const uploadedAt = new Date().toISOString();
-    const { error } = await supabaseClient.from('user_data').upsert(
-      {
-        user_id: cloudUser.id,
-        data: payload,
-        updated_at: uploadedAt,
-      },
-      { onConflict: 'user_id' }
+    const { error } = await withTimeout(
+      supabaseClient.from('user_data').upsert(
+        {
+          user_id: cloudUser.id,
+          data: payload,
+          updated_at: uploadedAt,
+        },
+        { onConflict: 'user_id' }
+      ),
+      CLOUD_SYNC_TIMEOUT_MS
     );
     if (error) {
       setCloudError(error.message);
-      setCloudStatus('Error al sincronizar. Pendiente de reintento.', 'error');
+      setCloudStatus('Error al sincronizar. Reintentando...', 'error');
+      setTimeout(() => scheduleCloudSync(), CLOUD_SYNC_RETRY_MS);
       return false;
     }
     cloudSyncPending = false;
     setLastUploadedAt(uploadedAt);
     setCloudStatus('Sincronizado.', 'ok');
     setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(uploadedAt)}`);
+    flashSyncIndicator();
     return true;
   } catch (error) {
     setCloudError(error.message);
-    setCloudStatus('Error al sincronizar. Pendiente de reintento.', 'error');
+    setCloudStatus('Error al sincronizar. Reintentando...', 'error');
+    setTimeout(() => scheduleCloudSync(), CLOUD_SYNC_RETRY_MS);
     return false;
   } finally {
     cloudSyncInFlight = false;
@@ -3166,6 +3198,7 @@ const syncFromCloudIfNewer = async () => {
       setLocalUpdatedAt(cloudPayload.updated_at);
       setLastUploadedAt(cloudPayload.updated_at);
       setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(cloudPayload.updated_at)}`);
+      flashSyncIndicator();
     } catch (err) {
       setCloudError(err.message);
       setCloudStatus('Error al descargar.', 'error');
