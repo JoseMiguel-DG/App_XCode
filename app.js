@@ -230,7 +230,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.11.0';
+const APP_VERSION = '0.11.1';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 
 const state = {
@@ -1484,7 +1484,7 @@ const buildRunningRow = (session, { withDelete, onDelete } = {}) => {
   row.className = withDelete ? 'running-row running-row--action' : 'running-row';
 
   const grid = document.createElement('div');
-  grid.className = 'running-grid';
+  grid.className = withDelete ? 'running-grid running-grid--action' : 'running-grid';
 
   const dateText = session.finishedAt ? formatDate(session.finishedAt) : '-';
   const distanceText = `${formatNumber(session.distanceKm, 2)} km`;
@@ -1508,13 +1508,17 @@ const buildRunningRow = (session, { withDelete, onDelete } = {}) => {
   grid.appendChild(distanceCell);
   grid.appendChild(durationCell);
   grid.appendChild(paceCell);
-  grid.appendChild(notesCell);
+  if (notesCell.textContent) {
+    grid.appendChild(notesCell);
+  }
   row.appendChild(grid);
 
   if (withDelete) {
     const action = document.createElement('button');
-    action.className = 'button button--ghost';
-    action.textContent = 'Eliminar';
+    action.className = 'running-action-button';
+    action.type = 'button';
+    action.textContent = 'X';
+    action.setAttribute('aria-label', 'Eliminar sesion');
     action.addEventListener('click', () => onDelete?.(session));
     row.appendChild(action);
   }

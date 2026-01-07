@@ -1234,6 +1234,10 @@ body {
   align-items: center;
 }
 
+.running-grid--action {
+  grid-template-columns: 0.9fr 0.7fr 0.7fr 0.8fr 1.2fr;
+}
+
 .running-chip {
   display: inline-flex;
   align-items: center;
@@ -1270,8 +1274,25 @@ body {
   color: var(--muted);
 }
 
-.running-row--action .button {
-  align-self: flex-start;
+.running-row--action {
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
+}
+
+.running-row--action .running-grid {
+  flex: 1;
+}
+
+.running-action-button {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  border: 1px solid rgba(248, 113, 113, 0.6);
+  background: rgba(248, 113, 113, 0.12);
+  color: #fecaca;
+  font-weight: 700;
+  cursor: pointer;
 }
 
 .running-note {
@@ -1331,8 +1352,14 @@ body {
   }
 
   .running-grid {
-    grid-template-columns: 1fr;
+    display: flex;
+    flex-wrap: nowrap;
     gap: 8px;
+    overflow: hidden;
+  }
+
+  .running-note--inline {
+    display: none;
   }
 }
 
