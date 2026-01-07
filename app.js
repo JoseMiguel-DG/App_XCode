@@ -80,6 +80,13 @@ const historyDelete = document.getElementById('historyDelete');
 const historyDetailTitle = document.getElementById('historyDetailTitle');
 const historyDetailMeta = document.getElementById('historyDetailMeta');
 const historyDetailList = document.getElementById('historyDetailList');
+const profileMenu = document.getElementById('profileMenu');
+const profileButton = document.getElementById('profileButton');
+const settingsButton = document.getElementById('settingsButton');
+const profileMenuName = document.getElementById('profileMenuName');
+const profileMenuEmail = document.getElementById('profileMenuEmail');
+const profileMenuGoal = document.getElementById('profileMenuGoal');
+const profileLogout = document.getElementById('profileLogout');
 
 const exportData = document.getElementById('exportData');
 const importData = document.getElementById('importData');
@@ -89,11 +96,17 @@ const profileEmail = document.getElementById('profileEmail');
 const profileName = document.getElementById('profileName');
 const profileGoal = document.getElementById('profileGoal');
 const profileExperience = document.getElementById('profileExperience');
+const profileAge = document.getElementById('profileAge');
+const profileSex = document.getElementById('profileSex');
+const profileFrequency = document.getElementById('profileFrequency');
 const profileHeight = document.getElementById('profileHeight');
 const profileWeight = document.getElementById('profileWeight');
 const profileNotes = document.getElementById('profileNotes');
 const profileError = document.getElementById('profileError');
 const saveProfile = document.getElementById('saveProfile');
+const profileAvatarInput = document.getElementById('profileAvatarInput');
+const profileAvatarLarge = document.getElementById('profileAvatarLarge');
+const profileAvatar = document.getElementById('profileAvatar');
 const cloudEmail = document.getElementById('cloudEmail');
 const cloudPassword = document.getElementById('cloudPassword');
 const cloudError = document.getElementById('cloudError');
@@ -144,6 +157,8 @@ const homeSparkline = document.getElementById('homeSparkline');
 const homeNextSessionCard = document.getElementById('homeNextSessionCard');
 const homeNextSessionTitle = document.getElementById('homeNextSessionTitle');
 const homeNextSessionList = document.getElementById('homeNextSessionList');
+const homeProfileCard = document.getElementById('homeProfileCard');
+const homeProfileSummary = document.getElementById('homeProfileSummary');
 const authTabs = document.querySelectorAll('[data-auth-tab]');
 const authLoginPanel = document.getElementById('authLoginPanel');
 const authSignupPanel = document.getElementById('authSignupPanel');
@@ -196,6 +211,7 @@ let cloudReady = false;
 let cloudSyncPending = false;
 let isAuthenticated = false;
 let confirmResolver = null;
+let currentProfileAvatar = '';
 
 const scheduleCloudSync = () => {
   if (!supabaseClient || !cloudUser || isCloudImporting || !cloudReady) return;
@@ -1436,12 +1452,13 @@ const renderHomeDashboard = async () => {
     return;
   }
 
-  const [sessions, logs, exercises, routineDays, routineItems] = await Promise.all([
+  const [sessions, logs, exercises, routineDays, routineItems, profile] = await Promise.all([
     getAllFromStore('trainingSessions'),
     getAllFromStore('sessionExerciseLogs'),
     getAllFromStore('exercises'),
     getAllFromStore('routineDays'),
     getAllFromStore('routineItems'),
+    profileRepository.getProfile(),
   ]);
 
   const exerciseMap = new Map(exercises.map((exercise) => [exercise.id, exercise]));
@@ -1597,6 +1614,25 @@ const renderHomeDashboard = async () => {
     }
   } else {
     homeNextSessionCard.hidden = true;
+  }
+
+  if (homeProfileCard && homeProfileSummary) {
+    const summaryParts = [];
+    if (profile?.goal) summaryParts.push(profile.goal);
+    if (profile?.experience) summaryParts.push(profile.experience);
+    if (profile?.frequency) summaryParts.push(`${profile.frequency} dias/semana`);
+    if (profile?.age) summaryParts.push(`${profile.age} anos`);
+    if (profile?.height || profile?.weight) {
+      const height = profile.height ? `${profile.height} cm` : '';
+      const weight = profile.weight ? `${profile.weight} kg` : '';
+      summaryParts.push([height, weight].filter(Boolean).join(' · '));
+    }
+    if (summaryParts.length > 0) {
+      homeProfileCard.hidden = false;
+      homeProfileSummary.textContent = summaryParts.join(' · ');
+    } else {
+      homeProfileCard.hidden = true;
+    }
   }
 };
 
@@ -2902,6 +2938,8 @@ const importPayload = async (parsed) => {
   await refreshTrainingHome();
   await renderCategories();
   await renderRoutineDayList();
+  await renderProfile();
+  await renderHomeDashboard();
 };
 
 const setCloudError = (message) => {
@@ -2924,9 +2962,36 @@ const renderProfile = async () => {
   if (profileName) profileName.value = profile?.name || '';
   if (profileGoal) profileGoal.value = profile?.goal || '';
   if (profileExperience) profileExperience.value = profile?.experience || '';
+  if (profileAge) profileAge.value = profile?.age ?? '';
+  if (profileSex) profileSex.value = profile?.sex || '';
+  if (profileFrequency) profileFrequency.value = profile?.frequency ?? '';
   if (profileHeight) profileHeight.value = profile?.height ?? '';
   if (profileWeight) profileWeight.value = profile?.weight ?? '';
   if (profileNotes) profileNotes.value = profile?.notes || '';
+  currentProfileAvatar = profile?.avatar || '';
+  if (profileAvatarLarge) {
+    profileAvatarLarge.style.backgroundImage = currentProfileAvatar
+      ? `url('${currentProfileAvatar}')`
+      : '';
+  }
+  if (profileButton) {
+    const avatar = profile?.avatar;
+    const hasAvatar = Boolean(avatar);
+    profileButton.classList.toggle('has-avatar', hasAvatar);
+    if (profileAvatar) {
+      profileAvatar.src = avatar || '';
+      profileAvatar.alt = hasAvatar ? 'Avatar' : '';
+    }
+  }
+  if (profileMenuName) {
+    profileMenuName.textContent = profile?.name || 'Perfil';
+  }
+  if (profileMenuEmail) {
+    profileMenuEmail.textContent = cloudUser?.email || '';
+  }
+  if (profileMenuGoal) {
+    profileMenuGoal.textContent = profile?.goal ? `Objetivo: ${profile.goal}` : '';
+  }
   if (profileError) profileError.textContent = '';
 };
 
@@ -2942,9 +3007,13 @@ const profileRepository = {
       name: data.name || '',
       goal: data.goal || '',
       experience: data.experience || '',
+      age: data.age ?? null,
+      sex: data.sex || '',
+      frequency: data.frequency ?? null,
       height: data.height ?? null,
       weight: data.weight ?? null,
       notes: data.notes || '',
+      avatar: data.avatar || current?.avatar || '',
       createdAt: current?.createdAt || now,
       updatedAt: now,
     };
@@ -3052,13 +3121,26 @@ const updateCloudUI = (user) => {
     if (profileEmail) {
       profileEmail.value = user.email || '';
     }
+    if (profileMenu) {
+      profileMenu.hidden = false;
+    }
+    if (settingsButton) {
+      settingsButton.hidden = false;
+    }
     if (cloudSessionPanel) cloudSessionPanel.hidden = false;
     if (cloudAuthForm) cloudAuthForm.hidden = true;
+    renderProfile();
     const route = location.hash.replace('#', '') || 'home';
     setView(route === 'auth' ? 'home' : route);
   } else {
     setCloudStatus('No autenticado.', 'warn');
     setCloudControls(false);
+    if (profileMenu) {
+      profileMenu.hidden = true;
+    }
+    if (settingsButton) {
+      settingsButton.hidden = true;
+    }
     if (cloudSessionPanel) cloudSessionPanel.hidden = true;
     if (cloudAuthForm) cloudAuthForm.hidden = false;
     setCloudLastSync('');
@@ -3522,14 +3604,59 @@ if (saveProfile) {
         name: profileName ? profileName.value.trim() : '',
         goal: profileGoal ? profileGoal.value.trim() : '',
         experience: profileExperience ? profileExperience.value : '',
+        age: parseNumber(profileAge ? profileAge.value : ''),
+        sex: profileSex ? profileSex.value : '',
+        frequency: parseNumber(profileFrequency ? profileFrequency.value : ''),
         height: parseNumber(profileHeight ? profileHeight.value : ''),
         weight: parseNumber(profileWeight ? profileWeight.value : ''),
         notes: profileNotes ? profileNotes.value.trim() : '',
+        avatar: currentProfileAvatar,
       });
       setCloudStatus('Perfil guardado.', 'ok');
+      if (saveProfile) {
+        saveProfile.classList.add('is-saving');
+      }
+      await renderProfile();
+      await renderHomeDashboard();
+      setTimeout(() => {
+        if (saveProfile) {
+          saveProfile.classList.remove('is-saving');
+        }
+        setView('home');
+      }, 450);
     } catch (error) {
       if (profileError) profileError.textContent = error.message;
     }
+  });
+}
+
+if (profileAvatarInput) {
+  profileAvatarInput.addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      currentProfileAvatar = reader.result || '';
+      if (profileAvatarLarge) {
+        profileAvatarLarge.style.backgroundImage = currentProfileAvatar
+          ? `url('${currentProfileAvatar}')`
+          : '';
+      }
+      if (profileButton) {
+        profileButton.classList.toggle('has-avatar', Boolean(currentProfileAvatar));
+      }
+      if (profileAvatar) {
+        profileAvatar.src = currentProfileAvatar || '';
+      }
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+if (profileLogout) {
+  profileLogout.addEventListener('click', async () => {
+    if (!supabaseClient) return;
+    await supabaseClient.auth.signOut();
   });
 }
 

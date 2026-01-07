@@ -178,6 +178,73 @@ body {
   gap: 12px;
 }
 
+.profile-menu {
+  position: relative;
+}
+
+.profile-button {
+  position: relative;
+  overflow: hidden;
+}
+
+.profile-avatar {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: none;
+}
+
+.profile-button.has-avatar .profile-avatar {
+  display: block;
+}
+
+.profile-button.has-avatar .profile-icon {
+  display: none;
+}
+
+.profile-card {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 10px);
+  min-width: 220px;
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+  display: none;
+  z-index: 20;
+}
+
+[data-theme="light"] .profile-card {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
+.profile-menu:hover .profile-card,
+.profile-menu:focus-within .profile-card {
+  display: block;
+}
+
+.profile-card__title {
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.profile-card__meta {
+  color: var(--muted);
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+}
+
+.profile-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
 .brand {
   display: flex;
   align-items: center;
@@ -733,6 +800,55 @@ body {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.profile-upload {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.profile-upload__avatar {
+  width: 72px;
+  height: 72px;
+  border-radius: 18px;
+  background: rgba(17, 24, 39, 0.85);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: var(--shadow);
+  background-size: cover;
+  background-position: center;
+}
+
+.profile-upload__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.button.is-saving {
+  position: relative;
+  pointer-events: none;
+  filter: brightness(1.05);
+}
+
+.button.is-saving::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0.3), transparent 60%);
+  animation: shine 0.8s ease;
+}
+
+@keyframes shine {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
 }
 
 .auth-tabs {

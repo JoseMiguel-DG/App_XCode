@@ -86,27 +86,51 @@
           </div>
         </div>
         <div class="header__actions">
-          <button class="icon-button" data-route="profile" aria-label="Perfil" title="Perfil">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-              <path
-                d="M20 21a8 8 0 0 0-16 0"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-              <path
-                d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4z"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-          <button class="icon-button" data-route="settings" aria-label="Ajustes" title="Ajustes">
+          <div class="profile-menu" id="profileMenu">
+            <button
+              class="icon-button profile-button"
+              id="profileButton"
+              data-route="profile"
+              aria-label="Perfil"
+              title="Perfil"
+            >
+              <img class="profile-avatar" id="profileAvatar" alt="Avatar" />
+              <svg class="profile-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path
+                  d="M20 21a8 8 0 0 0-16 0"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+                <path
+                  d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4z"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+            <div class="profile-card" id="profileMenuCard">
+              <p class="profile-card__title" id="profileMenuName">Perfil</p>
+              <p class="profile-card__meta" id="profileMenuEmail"></p>
+              <p class="profile-card__meta" id="profileMenuGoal"></p>
+              <div class="profile-card__actions">
+                <button class="button button--ghost" data-route="profile">Ver perfil</button>
+                <button class="button button--danger" id="profileLogout">Cerrar sesion</button>
+              </div>
+            </div>
+          </div>
+          <button
+            class="icon-button"
+            id="settingsButton"
+            data-route="settings"
+            aria-label="Ajustes"
+            title="Ajustes"
+          >
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path
                 d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z"
@@ -359,6 +383,16 @@
             </div>
           </div>
 
+          <div class="card" id="homeProfileCard" hidden>
+            <div class="card__row">
+              <div>
+                <p class="card__title">Perfil</p>
+                <p class="card__text" id="homeProfileSummary"></p>
+              </div>
+              <button class="button button--ghost" data-route="profile">Editar</button>
+            </div>
+          </div>
+
         </section>
 
         <section class="panel" data-view="train">
@@ -422,6 +456,18 @@
           </div>
           <div class="card">
             <div class="form__grid">
+              <div class="profile-upload">
+                <div class="profile-upload__avatar" id="profileAvatarLarge"></div>
+                <div class="profile-upload__actions">
+                  <label class="button button--ghost" for="profileAvatarInput">Subir foto</label>
+                  <input
+                    id="profileAvatarInput"
+                    type="file"
+                    accept="image/*"
+                    hidden
+                  />
+                </div>
+              </div>
               <div class="form__field">
                 <label class="form__label" for="profileEmail">Email</label>
                 <input class="form__input" id="profileEmail" type="email" readonly />
@@ -447,6 +493,29 @@
                   <option value="intermedio">Intermedio</option>
                   <option value="avanzado">Avanzado</option>
                 </select>
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="profileAge">Edad</label>
+                <input class="form__input" id="profileAge" type="number" min="0" />
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="profileSex">Sexo</label>
+                <select class="form__input" id="profileSex">
+                  <option value="">Selecciona</option>
+                  <option value="masculino">Masculino</option>
+                  <option value="femenino">Femenino</option>
+                  <option value="otro">Otro</option>
+                </select>
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="profileFrequency">Frecuencia semanal</label>
+                <input
+                  class="form__input"
+                  id="profileFrequency"
+                  type="number"
+                  min="0"
+                  placeholder="Ej. 4"
+                />
               </div>
               <div class="form__field">
                 <label class="form__label" for="profileHeight">Altura (cm)</label>
