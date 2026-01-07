@@ -874,6 +874,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  overflow: hidden;
 }
 
 [data-theme="light"] .workout-card {
@@ -908,6 +909,8 @@ body {
   grid-template-columns: 48px repeat(3, 1fr);
   gap: 8px;
   align-items: center;
+  width: 100%;
+  min-width: 0;
 }
 
 .set-row__label {
@@ -922,6 +925,8 @@ body {
   background: rgba(15, 23, 42, 0.8);
   color: var(--text);
   font-size: 0.9rem;
+  width: 100%;
+  min-width: 0;
 }
 
 [data-theme="light"] .set-input {
@@ -961,7 +966,7 @@ body {
 
 @media (max-width: 520px) {
   .set-row {
-    grid-template-columns: 36px 1fr 1fr;
+    grid-template-columns: 36px minmax(0, 1fr) minmax(0, 1fr);
     grid-template-areas:
       "label weight weight"
       "label reps rir";

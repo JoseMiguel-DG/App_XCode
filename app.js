@@ -2967,6 +2967,24 @@ const setCloudLastSync = (label) => {
   }
 };
 
+const cleanupEmptySessions = async () => {
+  const sessions = await trainingRepository.listAllSessions();
+  const active = sessions.filter((session) => !session.finishedAt);
+  if (active.length === 0) return;
+  for (const session of active) {
+    const logs = await sessionLogRepository.listLogsBySession(session.id);
+    const hasData = logs.some((log) =>
+      (log.sets || []).some(
+        (set) => set.weight !== null || set.reps !== null || set.rir !== null
+      )
+    );
+    if (!hasData) {
+      await trainingRepository.deleteSession(session.id);
+      await sessionLogRepository.deleteLogsBySession(session.id);
+    }
+  }
+};
+
 const setCloudControls = (isAuthed) => {
   if (!cloudLogin || !cloudSignup || !cloudLogout || !cloudUpload || !cloudDownload) return;
   cloudLogin.hidden = isAuthed;
@@ -3413,6 +3431,7 @@ const startApp = async () => {
     await seedRoutineData();
     await seedTrainingData();
     isSeeding = false;
+    await cleanupEmptySessions();
     await renderCategories();
     await renderRoutineDayList();
     await refreshTrainingHome();
