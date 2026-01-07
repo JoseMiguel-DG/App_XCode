@@ -194,7 +194,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.9.2';
+const APP_VERSION = '0.9.3';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 
 const state = {
@@ -1701,8 +1701,6 @@ const renderHistoryList = async () => {
     });
 };
 
-const calculateE1rm = (weight, reps) => weight * (1 + reps / 30);
-
 const buildRecordsDataset = async () => {
   const [exercises, categories, sessions, logs] = await Promise.all([
     exerciseRepository.listAllExercises(),
@@ -1730,9 +1728,6 @@ const buildRecordsDataset = async () => {
         maxWeight: null,
         maxWeightSet: null,
         maxWeightDate: null,
-        maxE1rm: null,
-        maxE1rmSet: null,
-        maxE1rmDate: null,
         sessionIds: new Set(),
         totalSets: 0,
         lastDate: null,
@@ -1750,12 +1745,6 @@ const buildRecordsDataset = async () => {
         record.maxWeightDate = recordDate;
       }
       if (reps != null && reps > 0) {
-        const e1rm = calculateE1rm(weight, reps);
-        if (record.maxE1rm == null || e1rm > record.maxE1rm) {
-          record.maxE1rm = e1rm;
-          record.maxE1rmSet = { weight, reps, rir: set.rir ?? null };
-          record.maxE1rmDate = recordDate;
-        }
         record.totalSets += 1;
       }
     });
@@ -1771,7 +1760,7 @@ const buildRecordsDataset = async () => {
   return Array.from(recordsByExercise.values()).map((record) => ({
     ...record,
     sessionCount: record.sessionIds.size,
-    prDate: record.maxWeightDate || record.maxE1rmDate,
+    prDate: record.maxWeightDate,
   }));
 };
 
@@ -1807,8 +1796,8 @@ const renderRecords = async () => {
   const allRecords = await buildRecordsDataset();
   const totalRecords = allRecords.length;
   const bestRecord = allRecords.reduce((best, record) => {
-    const bestValue = best ? (best.maxE1rm ?? best.maxWeight ?? 0) : 0;
-    const currentValue = record.maxE1rm ?? record.maxWeight ?? 0;
+    const bestValue = best ? best.maxWeight ?? 0 : 0;
+    const currentValue = record.maxWeight ?? 0;
     return currentValue > bestValue ? record : best;
   }, null);
   const latestRecord = allRecords.reduce((latest, record) => {
@@ -1822,13 +1811,11 @@ const renderRecords = async () => {
     recordsTotalMeta.textContent = totalRecords ? 'Ejercicios con PR' : 'Sin PRs registrados';
   }
   if (recordsBestValue) {
-    recordsBestValue.textContent = bestRecord
-      ? `${formatNumber(bestRecord.maxE1rm ?? bestRecord.maxWeight)} kg`
-      : '-';
+    recordsBestValue.textContent = bestRecord ? `${formatNumber(bestRecord.maxWeight)} kg` : '-';
   }
   if (recordsBestMeta) {
     recordsBestMeta.textContent = bestRecord
-      ? `Mejor marca · ${bestRecord.exercise.name}`
+      ? `Mejor PR · ${bestRecord.exercise.name}`
       : 'Sin datos';
   }
   if (recordsLastValue) {
@@ -1889,7 +1876,7 @@ const renderRecords = async () => {
     exerciseCell.appendChild(meta);
 
     const prCell = document.createElement('div');
-    const prSet = record.maxWeightSet || record.maxE1rmSet;
+  const prSet = record.maxWeightSet;
     const prValue = document.createElement('div');
     prValue.className = 'records-value';
     prValue.textContent = prSet
@@ -1900,16 +1887,6 @@ const renderRecords = async () => {
     prSub.textContent = prSet?.rir != null ? `RIR ${prSet.rir}` : 'Mejor set';
     prCell.appendChild(prValue);
     prCell.appendChild(prSub);
-
-    const e1rmCell = document.createElement('div');
-    const e1rmValue = document.createElement('div');
-    e1rmValue.className = 'records-value';
-    e1rmValue.textContent = record.maxE1rm ? `${formatNumber(record.maxE1rm)} kg` : '-';
-    const e1rmSub = document.createElement('div');
-    e1rmSub.className = 'records-sub';
-    e1rmSub.textContent = record.maxE1rm ? 'e1RM' : 'Sin e1RM';
-    e1rmCell.appendChild(e1rmValue);
-    e1rmCell.appendChild(e1rmSub);
 
     const dateCell = document.createElement('div');
     const dateValue = document.createElement('div');
@@ -1933,7 +1910,6 @@ const renderRecords = async () => {
 
     row.appendChild(exerciseCell);
     row.appendChild(prCell);
-    row.appendChild(e1rmCell);
     row.appendChild(dateCell);
     row.appendChild(sessionsCell);
     recordsList.appendChild(row);
