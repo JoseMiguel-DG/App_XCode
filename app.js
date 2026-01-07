@@ -98,6 +98,11 @@ const historyDelete = document.getElementById('historyDelete');
 const historyDetailTitle = document.getElementById('historyDetailTitle');
 const historyDetailMeta = document.getElementById('historyDetailMeta');
 const historyDetailList = document.getElementById('historyDetailList');
+const historyModeGym = document.getElementById('historyModeGym');
+const historyModeRun = document.getElementById('historyModeRun');
+const historyGymPanel = document.getElementById('historyGymPanel');
+const historyRunPanel = document.getElementById('historyRunPanel');
+const historyRunningList = document.getElementById('historyRunningList');
 const recordsSearch = document.getElementById('recordsSearch');
 const recordsCategoryFilter = document.getElementById('recordsCategoryFilter');
 const recordsList = document.getElementById('recordsList');
@@ -219,7 +224,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.10.2';
+const APP_VERSION = '0.10.4';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 
 const state = {
@@ -236,6 +241,7 @@ const state = {
   recordsCategoryFilter: 'all',
   trainMode: 'gym',
   runningPaceManual: false,
+  historyMode: 'gym',
 };
 
 const createId = () =>
@@ -1377,7 +1383,7 @@ const setView = (route) => {
     renderHomeDashboard();
   }
   if (route === 'history') {
-    renderHistoryList();
+    setHistoryMode(state.historyMode || 'gym');
   }
   if (route === 'train') {
     setTrainMode(state.trainMode || 'gym');
@@ -1447,6 +1453,13 @@ const formatPace = (secondsPerKm) => {
   const mins = Math.floor(secondsPerKm / 60);
   const secs = Math.round(secondsPerKm % 60);
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}/km`;
+};
+
+const formatPaceInput = (secondsPerKm) => {
+  if (secondsPerKm == null || Number.isNaN(secondsPerKm)) return '';
+  const mins = Math.floor(secondsPerKm / 60);
+  const secs = Math.round(secondsPerKm % 60);
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 };
 
 const parseTimeToSeconds = (value) => {
@@ -1794,6 +1807,64 @@ const renderHistoryList = async () => {
     });
 };
 
+const renderHistoryRunningList = async () => {
+  if (!historyRunningList) return;
+  const sessions = await runningRepository.listAllSessions();
+  const sorted = sessions
+    .filter((session) => session.finishedAt)
+    .sort((a, b) => new Date(b.finishedAt) - new Date(a.finishedAt));
+
+  historyRunningList.innerHTML = '';
+  if (sorted.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = 'No hay sesiones de running.';
+    historyRunningList.appendChild(empty);
+    return;
+  }
+
+  sorted.forEach((session) => {
+    const row = document.createElement('div');
+    row.className = 'running-row';
+
+    const dateCell = document.createElement('div');
+    dateCell.textContent = session.finishedAt ? formatDate(session.finishedAt) : '-';
+
+    const distanceCell = document.createElement('div');
+    distanceCell.textContent = `${formatNumber(session.distanceKm, 2)} km`;
+
+    const durationCell = document.createElement('div');
+    durationCell.textContent = formatDuration(session.durationSeconds);
+
+    const paceCell = document.createElement('div');
+    paceCell.textContent = formatPace(session.paceSeconds);
+
+    const notesCell = document.createElement('div');
+    notesCell.className = 'running-note';
+    notesCell.textContent = session.notes || '-';
+
+    row.appendChild(dateCell);
+    row.appendChild(distanceCell);
+    row.appendChild(durationCell);
+    row.appendChild(paceCell);
+    row.appendChild(notesCell);
+    historyRunningList.appendChild(row);
+  });
+};
+
+const setHistoryMode = (mode) => {
+  state.historyMode = mode;
+  if (historyModeGym) historyModeGym.classList.toggle('is-active', mode === 'gym');
+  if (historyModeRun) historyModeRun.classList.toggle('is-active', mode === 'run');
+  if (historyGymPanel) historyGymPanel.hidden = mode !== 'gym';
+  if (historyRunPanel) historyRunPanel.hidden = mode !== 'run';
+  if (mode === 'gym') {
+    renderHistoryList();
+  } else {
+    renderHistoryRunningList();
+  }
+};
+
 const setTrainMode = (mode) => {
   state.trainMode = mode;
   if (trainModeGym) trainModeGym.classList.toggle('is-active', mode === 'gym');
@@ -1815,7 +1886,7 @@ const updateRunningPacePreview = () => {
     return;
   }
   const paceSeconds = durationSeconds / distance;
-  runningPace.value = formatPace(paceSeconds);
+  runningPace.value = formatPaceInput(paceSeconds);
 };
 
 const renderRunningSummary = (sessions) => {
@@ -3297,6 +3368,14 @@ if (recordsCategoryFilter) {
   });
 }
 
+if (historyModeGym) {
+  historyModeGym.addEventListener('click', () => setHistoryMode('gym'));
+}
+
+if (historyModeRun) {
+  historyModeRun.addEventListener('click', () => setHistoryMode('run'));
+}
+
 if (trainModeGym) {
   trainModeGym.addEventListener('click', () => setTrainMode('gym'));
 }
@@ -3360,6 +3439,8 @@ if (runningSave) {
     state.runningPaceManual = false;
     updateRunningPacePreview();
     await renderRunning();
+    await renderRunningRecords();
+    await renderHistoryRunningList();
   });
 }
 
