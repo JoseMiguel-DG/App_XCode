@@ -228,7 +228,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.10.7';
+const APP_VERSION = '0.10.8';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 
 const state = {
@@ -910,6 +910,9 @@ const runningRepository = {
   async listAllSessions() {
     return getAllFromStore('runningSessions');
   },
+  async deleteSession(id) {
+    await deleteFromStore('runningSessions', id);
+  },
 };
 
 const seedData = async () => {
@@ -1467,6 +1470,13 @@ const formatPaceInput = (secondsPerKm) => {
   return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 };
 
+const buildRunningChip = (text, tone) => {
+  const span = document.createElement('span');
+  span.className = `running-chip running-chip--${tone}`;
+  span.textContent = text;
+  return span;
+};
+
 const parseTimeToSeconds = (value) => {
   if (!value) return null;
   const normalized = value.trim();
@@ -1832,7 +1842,7 @@ const renderHistoryRunningList = async () => {
 
   sorted.forEach((session) => {
     const row = document.createElement('div');
-    row.className = 'running-row running-row--compact';
+    row.className = 'running-row running-row--compact running-row--action';
 
     const line = document.createElement('div');
     line.className = 'running-line';
@@ -1840,14 +1850,36 @@ const renderHistoryRunningList = async () => {
     const distanceText = `${formatNumber(session.distanceKm, 2)} km`;
     const durationText = formatDuration(session.durationSeconds);
     const paceText = formatPace(session.paceSeconds);
-    line.textContent = `${dateText} · ${distanceText} · ${durationText} · ${paceText}`;
+    line.appendChild(buildRunningChip(dateText, 'date'));
+    line.appendChild(buildRunningChip(distanceText, 'distance'));
+    line.appendChild(buildRunningChip(durationText, 'time'));
+    line.appendChild(buildRunningChip(paceText, 'pace'));
 
     const notes = document.createElement('div');
     notes.className = 'running-note';
-    notes.textContent = session.notes || '-';
+    notes.textContent = session.notes || '';
+
+    const action = document.createElement('button');
+    action.className = 'button button--ghost';
+    action.textContent = 'Eliminar';
+    action.addEventListener('click', async () => {
+      const ok = await confirmDialog('Eliminar esta sesion de running?', {
+        title: 'Eliminar sesion',
+        confirmText: 'Eliminar',
+        danger: true,
+      });
+      if (!ok) return;
+      await runningRepository.deleteSession(session.id);
+      await renderHistoryRunningList();
+      await renderRunningRecords();
+      await renderRunning();
+    });
 
     row.appendChild(line);
-    row.appendChild(notes);
+    if (notes.textContent) {
+      row.appendChild(notes);
+    }
+    row.appendChild(action);
     historyRunningList.appendChild(row);
   });
 };
@@ -1944,14 +1976,19 @@ const renderRunningList = (sessions) => {
     const distanceText = `${formatNumber(session.distanceKm, 2)} km`;
     const durationText = formatDuration(session.durationSeconds);
     const paceText = formatPace(session.paceSeconds);
-    line.textContent = `${dateText} · ${distanceText} · ${durationText} · ${paceText}`;
+    line.appendChild(buildRunningChip(dateText, 'date'));
+    line.appendChild(buildRunningChip(distanceText, 'distance'));
+    line.appendChild(buildRunningChip(durationText, 'time'));
+    line.appendChild(buildRunningChip(paceText, 'pace'));
 
     const notes = document.createElement('div');
     notes.className = 'running-note';
-    notes.textContent = session.notes || '-';
+    notes.textContent = session.notes || '';
 
     row.appendChild(line);
-    row.appendChild(notes);
+    if (notes.textContent) {
+      row.appendChild(notes);
+    }
     runningList.appendChild(row);
   });
 };
@@ -2031,14 +2068,19 @@ const renderRunningRecords = async () => {
     const distanceText = `${formatNumber(session.distanceKm, 2)} km`;
     const durationText = formatDuration(session.durationSeconds);
     const paceText = formatPace(session.paceSeconds);
-    line.textContent = `${dateText} · ${distanceText} · ${durationText} · ${paceText}`;
+    line.appendChild(buildRunningChip(dateText, 'date'));
+    line.appendChild(buildRunningChip(distanceText, 'distance'));
+    line.appendChild(buildRunningChip(durationText, 'time'));
+    line.appendChild(buildRunningChip(paceText, 'pace'));
 
     const notes = document.createElement('div');
     notes.className = 'running-note';
-    notes.textContent = session.notes || '-';
+    notes.textContent = session.notes || '';
 
     row.appendChild(line);
-    row.appendChild(notes);
+    if (notes.textContent) {
+      row.appendChild(notes);
+    }
     recordsRunningList.appendChild(row);
   });
 };
