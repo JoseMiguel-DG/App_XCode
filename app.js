@@ -244,7 +244,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.11.3';
+const APP_VERSION = '0.11.4';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 const FRIEND_STATUS = {
   PENDING: 'pending',
@@ -1579,6 +1579,9 @@ const fetchProfileByEmail = async (email) => {
   if (error) {
     setCloudError(error.message);
     return null;
+  }
+  if (Array.isArray(data)) {
+    return data[0] || null;
   }
   return data || null;
 };
