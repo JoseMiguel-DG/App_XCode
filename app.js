@@ -85,6 +85,15 @@ const exportData = document.getElementById('exportData');
 const importData = document.getElementById('importData');
 const importFile = document.getElementById('importFile');
 const forceRefresh = document.getElementById('forceRefresh');
+const profileEmail = document.getElementById('profileEmail');
+const profileName = document.getElementById('profileName');
+const profileGoal = document.getElementById('profileGoal');
+const profileExperience = document.getElementById('profileExperience');
+const profileHeight = document.getElementById('profileHeight');
+const profileWeight = document.getElementById('profileWeight');
+const profileNotes = document.getElementById('profileNotes');
+const profileError = document.getElementById('profileError');
+const saveProfile = document.getElementById('saveProfile');
 const cloudEmail = document.getElementById('cloudEmail');
 const cloudPassword = document.getElementById('cloudPassword');
 const cloudError = document.getElementById('cloudError');
@@ -272,7 +281,7 @@ const updateStatus = () => {
 
 const openDatabase = () =>
   new Promise((resolve, reject) => {
-    const request = indexedDB.open(STORAGE_DB, 2);
+    const request = indexedDB.open(STORAGE_DB, 3);
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains('categories')) {
@@ -304,6 +313,9 @@ const openDatabase = () =>
         const logStore = db.createObjectStore('sessionExerciseLogs', { keyPath: 'id' });
         logStore.createIndex('sessionId', 'sessionId', { unique: false });
         logStore.createIndex('exerciseId', 'exerciseId', { unique: false });
+      }
+      if (!db.objectStoreNames.contains('profile')) {
+        db.createObjectStore('profile', { keyPath: 'id' });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -2858,6 +2870,7 @@ const getExportPayload = async () => {
     'routineItems',
     'trainingSessions',
     'sessionExerciseLogs',
+    'profile',
   ];
   const payload = { exportedAt: new Date().toISOString(), version: 2, data: {} };
   for (const store of stores) {
@@ -2877,6 +2890,7 @@ const importPayload = async (parsed) => {
     'routineItems',
     'trainingSessions',
     'sessionExerciseLogs',
+    'profile',
   ];
   for (const store of stores) {
     await clearStore(store);
@@ -2900,6 +2914,43 @@ const setSignupError = (message) => {
   if (cloudSignupError) {
     cloudSignupError.textContent = message || '';
   }
+};
+
+const renderProfile = async () => {
+  const profile = await profileRepository.getProfile();
+  if (profileEmail) {
+    profileEmail.value = cloudUser?.email || '';
+  }
+  if (profileName) profileName.value = profile?.name || '';
+  if (profileGoal) profileGoal.value = profile?.goal || '';
+  if (profileExperience) profileExperience.value = profile?.experience || '';
+  if (profileHeight) profileHeight.value = profile?.height ?? '';
+  if (profileWeight) profileWeight.value = profile?.weight ?? '';
+  if (profileNotes) profileNotes.value = profile?.notes || '';
+  if (profileError) profileError.textContent = '';
+};
+
+const profileRepository = {
+  async getProfile() {
+    return getFromStore('profile', 'profile');
+  },
+  async saveProfile(data) {
+    const current = await this.getProfile();
+    const now = Date.now();
+    const profile = {
+      id: 'profile',
+      name: data.name || '',
+      goal: data.goal || '',
+      experience: data.experience || '',
+      height: data.height ?? null,
+      weight: data.weight ?? null,
+      notes: data.notes || '',
+      createdAt: current?.createdAt || now,
+      updatedAt: now,
+    };
+    await putInStore('profile', profile);
+    return profile;
+  },
 };
 
 const setRecoveryError = (message) => {
@@ -2997,6 +3048,9 @@ const updateCloudUI = (user) => {
     setCloudControls(true);
     if (cloudSessionEmail) {
       cloudSessionEmail.textContent = user.email || 'usuario';
+    }
+    if (profileEmail) {
+      profileEmail.value = user.email || '';
     }
     if (cloudSessionPanel) cloudSessionPanel.hidden = false;
     if (cloudAuthForm) cloudAuthForm.hidden = true;
@@ -3414,6 +3468,9 @@ navButtons.forEach((button) => {
     if (route === 'routines') {
       renderRoutineDayList();
     }
+    if (route === 'profile') {
+      renderProfile();
+    }
   });
 });
 
@@ -3453,6 +3510,25 @@ if (forceRefresh) {
       console.error('No se pudo limpiar la cache.', error);
     } finally {
       window.location.reload();
+    }
+  });
+}
+
+if (saveProfile) {
+  saveProfile.addEventListener('click', async () => {
+    if (profileError) profileError.textContent = '';
+    try {
+      await profileRepository.saveProfile({
+        name: profileName ? profileName.value.trim() : '',
+        goal: profileGoal ? profileGoal.value.trim() : '',
+        experience: profileExperience ? profileExperience.value : '',
+        height: parseNumber(profileHeight ? profileHeight.value : ''),
+        weight: parseNumber(profileWeight ? profileWeight.value : ''),
+        notes: profileNotes ? profileNotes.value.trim() : '',
+      });
+      setCloudStatus('Perfil guardado.', 'ok');
+    } catch (error) {
+      if (profileError) profileError.textContent = error.message;
     }
   });
 }
@@ -3565,6 +3641,7 @@ const startApp = async () => {
     await renderCategories();
     await renderRoutineDayList();
     await refreshTrainingHome();
+    await renderProfile();
   } catch (error) {
     console.error('No se pudo inicializar la base local.', error);
     statusBadge.textContent = 'Error de datos';

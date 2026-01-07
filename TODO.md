@@ -1,5 +1,5 @@
 - Perfil
 - Ventana de PR
 - Running
-- Quitar la rutina e historial predeterminada que viene en la app de Pecho
-- Añadir Olvidó su contraseña
+- Quitar la rutina e historial predeterminada que viene en la app de Pecho ?? Done??
+- Arreglar Olvidó su contraseña

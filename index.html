@@ -86,6 +86,26 @@
           </div>
         </div>
         <div class="header__actions">
+          <button class="icon-button" data-route="profile" aria-label="Perfil" title="Perfil">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path
+                d="M20 21a8 8 0 0 0-16 0"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M12 12a4 4 0 1 0-4-4 4 4 0 0 0 4 4z"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </button>
           <button class="icon-button" data-route="settings" aria-label="Ajustes" title="Ajustes">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path
@@ -391,6 +411,66 @@
           </div>
 
           <ul class="list" id="historyList"></ul>
+        </section>
+
+        <section class="panel" data-view="profile" hidden>
+          <div class="panel__header">
+            <div>
+              <h2>Perfil</h2>
+              <p class="panel__subtitle">Personaliza tus datos para adaptar la app.</p>
+            </div>
+          </div>
+          <div class="card">
+            <div class="form__grid">
+              <div class="form__field">
+                <label class="form__label" for="profileEmail">Email</label>
+                <input class="form__input" id="profileEmail" type="email" readonly />
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="profileName">Nombre</label>
+                <input class="form__input" id="profileName" type="text" placeholder="Tu nombre" />
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="profileGoal">Objetivo principal</label>
+                <input
+                  class="form__input"
+                  id="profileGoal"
+                  type="text"
+                  placeholder="Ej. Ganar fuerza, recomposicion"
+                />
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="profileExperience">Nivel</label>
+                <select class="form__input" id="profileExperience">
+                  <option value="">Selecciona</option>
+                  <option value="principiante">Principiante</option>
+                  <option value="intermedio">Intermedio</option>
+                  <option value="avanzado">Avanzado</option>
+                </select>
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="profileHeight">Altura (cm)</label>
+                <input class="form__input" id="profileHeight" type="number" min="0" />
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="profileWeight">Peso (kg)</label>
+                <input class="form__input" id="profileWeight" type="number" min="0" />
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="profileNotes">Notas</label>
+                <textarea
+                  class="form__input form__input--textarea"
+                  id="profileNotes"
+                  rows="3"
+                  placeholder="Observaciones o preferencias"
+                ></textarea>
+              </div>
+            </div>
+            <p class="form__error" id="profileError"></p>
+            <div class="form__actions">
+              <button class="button button--primary" id="saveProfile">Guardar perfil</button>
+            </div>
+          </div>
         </section>
 
         <section class="panel" data-view="routines" hidden>
