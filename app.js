@@ -107,6 +107,13 @@ const recordsBestValue = document.getElementById('recordsBestValue');
 const recordsBestMeta = document.getElementById('recordsBestMeta');
 const recordsLastValue = document.getElementById('recordsLastValue');
 const recordsLastMeta = document.getElementById('recordsLastMeta');
+const recordsRunningList = document.getElementById('recordsRunningList');
+const recordsRunningTotalValue = document.getElementById('recordsRunningTotalValue');
+const recordsRunningTotalMeta = document.getElementById('recordsRunningTotalMeta');
+const recordsRunningPaceValue = document.getElementById('recordsRunningPaceValue');
+const recordsRunningPaceMeta = document.getElementById('recordsRunningPaceMeta');
+const recordsRunningLongestValue = document.getElementById('recordsRunningLongestValue');
+const recordsRunningLongestMeta = document.getElementById('recordsRunningLongestMeta');
 const profileMenu = document.getElementById('profileMenu');
 const profileButton = document.getElementById('profileButton');
 const settingsButton = document.getElementById('settingsButton');
@@ -212,7 +219,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.10.1';
+const APP_VERSION = '0.10.2';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 
 const state = {
@@ -1899,6 +1906,86 @@ const renderRunning = async () => {
   updateRunningPacePreview();
 };
 
+const renderRunningRecords = async () => {
+  if (!recordsRunningList) return;
+  const sessions = await runningRepository.listAllSessions();
+  const sorted = sessions
+    .filter((session) => session.finishedAt)
+    .sort((a, b) => new Date(b.finishedAt) - new Date(a.finishedAt));
+
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  const recent = sorted.filter((session) => new Date(session.finishedAt) >= cutoff);
+  const totalDistance = recent.reduce((acc, session) => acc + (session.distanceKm || 0), 0);
+  const totalDuration = recent.reduce((acc, session) => acc + (session.durationSeconds || 0), 0);
+  const avgPace = totalDistance > 0 ? totalDuration / totalDistance : null;
+  const longest = sorted.reduce((best, session) => {
+    if (!best) return session;
+    return (session.distanceKm || 0) > (best.distanceKm || 0) ? session : best;
+  }, null);
+
+  if (recordsRunningTotalValue) {
+    recordsRunningTotalValue.textContent = totalDistance
+      ? `${formatNumber(totalDistance, 2)} km`
+      : '0 km';
+  }
+  if (recordsRunningTotalMeta) {
+    recordsRunningTotalMeta.textContent = recent.length ? 'km acumulados' : 'Sin sesiones recientes';
+  }
+  if (recordsRunningPaceValue) {
+    recordsRunningPaceValue.textContent = avgPace ? formatPace(avgPace) : '-';
+  }
+  if (recordsRunningPaceMeta) {
+    recordsRunningPaceMeta.textContent = recent.length ? 'Ultimos 30 dias' : 'Sin datos';
+  }
+  if (recordsRunningLongestValue) {
+    recordsRunningLongestValue.textContent = longest
+      ? `${formatNumber(longest.distanceKm, 2)} km`
+      : '-';
+  }
+  if (recordsRunningLongestMeta) {
+    recordsRunningLongestMeta.textContent = longest
+      ? `${formatDate(longest.finishedAt)} · ${formatDuration(longest.durationSeconds)}`
+      : 'Sin datos';
+  }
+
+  recordsRunningList.innerHTML = '';
+  if (!sorted.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = 'Aun no hay sesiones de running.';
+    recordsRunningList.appendChild(empty);
+    return;
+  }
+
+  sorted.slice(0, 8).forEach((session) => {
+    const row = document.createElement('div');
+    row.className = 'running-row';
+
+    const dateCell = document.createElement('div');
+    dateCell.textContent = session.finishedAt ? formatDate(session.finishedAt) : '-';
+
+    const distanceCell = document.createElement('div');
+    distanceCell.textContent = `${formatNumber(session.distanceKm, 2)} km`;
+
+    const durationCell = document.createElement('div');
+    durationCell.textContent = formatDuration(session.durationSeconds);
+
+    const paceCell = document.createElement('div');
+    paceCell.textContent = formatPace(session.paceSeconds);
+
+    const notesCell = document.createElement('div');
+    notesCell.className = 'running-note';
+    notesCell.textContent = session.notes || '-';
+
+    row.appendChild(dateCell);
+    row.appendChild(distanceCell);
+    row.appendChild(durationCell);
+    row.appendChild(paceCell);
+    row.appendChild(notesCell);
+    recordsRunningList.appendChild(row);
+  });
+};
+
 const buildRecordsDataset = async () => {
   const [exercises, categories, sessions, logs] = await Promise.all([
     exerciseRepository.listAllExercises(),
@@ -2112,6 +2199,8 @@ const renderRecords = async () => {
     row.appendChild(sessionsCell);
     recordsList.appendChild(row);
   });
+
+  await renderRunningRecords();
 };
 
 const openHistorySession = async (sessionId) => {
