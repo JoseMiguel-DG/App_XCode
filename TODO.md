@@ -1,3 +1,5 @@
 - Perfil
 - Ventana de PR
 - Running
+- Verificacion de confirmar mail
+- Quitar la rutina e historial predeterminada que viene en la app de Pecho

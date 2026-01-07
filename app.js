@@ -143,6 +143,7 @@ const CLOUD_LOCAL_UPDATED_KEY = 'cloud-local-updated-at';
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
 const APP_VERSION = '0.9.0';
+const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 
 const state = {
   theme: 'dark',
@@ -3209,7 +3210,10 @@ if (cloudSignup) {
     const { error } = await supabaseClient.auth.signUp({
       email,
       password,
-      options: fullName ? { data: { full_name: fullName } } : undefined,
+      options: {
+        emailRedirectTo: AUTH_REDIRECT_URL,
+        data: fullName ? { full_name: fullName } : undefined,
+      },
     });
     if (error) {
       setSignupError(error.message);
