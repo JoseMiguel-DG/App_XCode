@@ -958,3 +958,28 @@ body {
     padding-top: 40px;
   }
 }
+
+@media (max-width: 520px) {
+  .set-row {
+    grid-template-columns: 36px 1fr 1fr;
+    grid-template-areas:
+      "label weight weight"
+      "label reps rir";
+  }
+
+  .set-row__label {
+    grid-area: label;
+  }
+
+  .set-row .set-input:nth-of-type(1) {
+    grid-area: weight;
+  }
+
+  .set-row .set-input:nth-of-type(2) {
+    grid-area: reps;
+  }
+
+  .set-row .set-input:nth-of-type(3) {
+    grid-area: rir;
+  }
+}
