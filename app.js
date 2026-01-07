@@ -93,6 +93,10 @@ const signupName = document.getElementById('signupName');
 const signupEmail = document.getElementById('signupEmail');
 const signupPassword = document.getElementById('signupPassword');
 const signupPasswordConfirm = document.getElementById('signupPasswordConfirm');
+const recoveryPassword = document.getElementById('recoveryPassword');
+const recoveryPasswordConfirm = document.getElementById('recoveryPasswordConfirm');
+const recoveryError = document.getElementById('recoveryError');
+const recoverySubmit = document.getElementById('recoverySubmit');
 const cloudStatus = document.getElementById('cloudStatus');
 const cloudStatusDot = document.getElementById('cloudStatusDot');
 const cloudStatusUnauthed = document.getElementById('cloudStatusUnauthed');
@@ -134,6 +138,15 @@ const homeNextSessionList = document.getElementById('homeNextSessionList');
 const authTabs = document.querySelectorAll('[data-auth-tab]');
 const authLoginPanel = document.getElementById('authLoginPanel');
 const authSignupPanel = document.getElementById('authSignupPanel');
+const authRecoveryPanel = document.getElementById('authRecoveryPanel');
+const authTabsContainer = document.getElementById('authTabs');
+const forgotPassword = document.getElementById('forgotPassword');
+const resetModal = document.getElementById('resetModal');
+const resetOverlay = document.getElementById('resetOverlay');
+const resetEmail = document.getElementById('resetEmail');
+const resetError = document.getElementById('resetError');
+const resetCancel = document.getElementById('resetCancel');
+const resetSend = document.getElementById('resetSend');
 
 const STORAGE_DB = 'exercise-library-db';
 const THEME_KEY = 'personal-pwa-theme';
@@ -1258,78 +1271,9 @@ const seedData = async () => {
   }
 };
 
-const seedRoutineData = async () => {
-  if (!ENABLE_SEED) return;
-  const routineDays = await routineRepository.listRoutineDays();
-  if (routineDays.length > 0) return;
+const seedRoutineData = async () => {};
 
-  const exercises = await exerciseRepository.listAllExercises();
-  const exerciseMap = new Map(exercises.map((exercise) => [exercise.nameLower, exercise]));
-  const pecho = exerciseMap.get('press banca con barra');
-  const inclinado = exerciseMap.get('press inclinado con mancuerna');
-  const remo = exerciseMap.get('remo con barra');
-
-  const routineDay = await routineRepository.createRoutineDay({
-    name: 'Pecho',
-    notes: 'Rutina base para pecho.',
-  });
-
-  const seedItems = [
-    pecho && { exerciseId: pecho.id, targetSets: 4, targetRepsMin: 6, targetRepsMax: 10 },
-    inclinado && { exerciseId: inclinado.id, targetSets: 3, targetRepsMin: 8, targetRepsMax: 12 },
-    remo && { exerciseId: remo.id, targetSets: 3, targetRepsMin: 8, targetRepsMax: 12 },
-  ].filter(Boolean);
-
-  for (const [index, item] of seedItems.entries()) {
-    await routineItemRepository.createRoutineItem({
-      routineDayId: routineDay.id,
-      exerciseId: item.exerciseId,
-      order: index + 1,
-      targetSets: item.targetSets,
-      targetRepsMin: item.targetRepsMin,
-      targetRepsMax: item.targetRepsMax,
-      restSeconds: 90,
-      targetRIR: 2,
-      notes: '',
-    });
-  }
-};
-
-const seedTrainingData = async () => {
-  if (!ENABLE_SEED) return;
-  const sessions = await trainingRepository.listAllSessions();
-  if (sessions.length > 0) return;
-  const days = await routineRepository.listRoutineDays();
-  if (days.length === 0) return;
-  const routineDay = days[0];
-  const items = await routineItemRepository.listItemsByRoutineDay(routineDay.id);
-  if (items.length === 0) return;
-
-  const session = await trainingRepository.createSession(routineDay.id);
-  await trainingRepository.updateSession(session.id, {
-    finishedAt: new Date().toISOString(),
-  });
-
-  for (const item of items) {
-    const log = {
-      id: createId(),
-      sessionId: session.id,
-      exerciseId: item.exerciseId,
-      sets: [
-        {
-          setNumber: 1,
-          weight: 60,
-          reps: 10,
-          rir: 2,
-          isDone: true,
-          createdAt: new Date().toISOString(),
-        },
-      ],
-      createdAt: new Date().toISOString(),
-    };
-    await sessionLogRepository.saveLog(log);
-  }
-};
+const seedTrainingData = async () => {};
 
 const loadTheme = () => {
   const stored = localStorage.getItem(THEME_KEY);
@@ -2958,16 +2902,37 @@ const setSignupError = (message) => {
   }
 };
 
+const setRecoveryError = (message) => {
+  if (recoveryError) {
+    recoveryError.textContent = message || '';
+  }
+};
+
 const setAuthTab = (tab) => {
   if (!authLoginPanel || !authSignupPanel || !authTabs.length) return;
   const isLogin = tab === 'login';
   authLoginPanel.hidden = !isLogin;
   authSignupPanel.hidden = isLogin;
+  if (authRecoveryPanel) {
+    authRecoveryPanel.hidden = true;
+  }
   authTabs.forEach((button) => {
     const isActive = button.dataset.authTab === tab;
     button.classList.toggle('is-active', isActive);
     button.setAttribute('aria-selected', isActive ? 'true' : 'false');
   });
+};
+
+const setRecoveryMode = (isRecovery) => {
+  if (authLoginPanel) authLoginPanel.hidden = isRecovery;
+  if (authSignupPanel) authSignupPanel.hidden = isRecovery;
+  if (authRecoveryPanel) authRecoveryPanel.hidden = !isRecovery;
+  if (authTabsContainer) {
+    authTabsContainer.classList.toggle('is-hidden', isRecovery);
+  }
+  if (!isRecovery) {
+    setAuthTab('login');
+  }
 };
 
 const setCloudStatus = (message, tone = 'idle') => {
@@ -3107,6 +3072,9 @@ const initCloudAuth = async () => {
   supabaseClient.auth.onAuthStateChange(async (_event, newSession) => {
     const user = newSession ? newSession.user : null;
     updateCloudUI(user);
+    if (_event === 'PASSWORD_RECOVERY') {
+      setRecoveryMode(true);
+    }
     if (user) {
       await maybeAutoDownload(user);
     }
@@ -3156,7 +3124,89 @@ if (authTabs.length) {
       setAuthTab(tab);
       setCloudError('');
       setSignupError('');
+      setRecoveryError('');
     });
+  });
+}
+
+if (forgotPassword) {
+  forgotPassword.addEventListener('click', () => {
+    if (resetError) resetError.textContent = '';
+    if (resetEmail) {
+      resetEmail.value = cloudEmail ? cloudEmail.value.trim() : '';
+      resetEmail.focus();
+    }
+    if (resetModal) {
+      resetModal.hidden = false;
+    }
+  });
+}
+
+if (resetCancel) {
+  resetCancel.addEventListener('click', () => {
+    if (resetModal) resetModal.hidden = true;
+  });
+}
+
+if (resetOverlay) {
+  resetOverlay.addEventListener('click', () => {
+    if (resetModal) resetModal.hidden = true;
+  });
+}
+
+if (resetSend) {
+  resetSend.addEventListener('click', async () => {
+    if (!supabaseClient) {
+      if (resetError) resetError.textContent = 'Supabase no disponible.';
+      return;
+    }
+    const email = resetEmail ? resetEmail.value.trim() : '';
+    if (!email) {
+      if (resetError) resetError.textContent = 'Introduce tu email.';
+      return;
+    }
+    const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+      redirectTo: AUTH_REDIRECT_URL,
+    });
+    if (error) {
+      if (resetError) resetError.textContent = error.message;
+      return;
+    }
+    if (resetError) {
+      resetError.textContent = 'Enlace enviado. Revisa tu correo.';
+    }
+  });
+}
+
+if (recoverySubmit) {
+  recoverySubmit.addEventListener('click', async () => {
+    if (!supabaseClient) {
+      setRecoveryError('Supabase no disponible.');
+      return;
+    }
+    const password = recoveryPassword ? recoveryPassword.value : '';
+    const confirm = recoveryPasswordConfirm ? recoveryPasswordConfirm.value : '';
+    if (!password || !confirm) {
+      setRecoveryError('Completa los dos campos.');
+      return;
+    }
+    if (password.length < 6) {
+      setRecoveryError('La contrasena debe tener al menos 6 caracteres.');
+      return;
+    }
+    if (password !== confirm) {
+      setRecoveryError('Las contrasenas no coinciden.');
+      return;
+    }
+    const { error } = await supabaseClient.auth.updateUser({ password });
+    if (error) {
+      setRecoveryError(error.message);
+      return;
+    }
+    setRecoveryError('');
+    setCloudStatus('Contrasena actualizada. Inicia sesion.', 'ok');
+    await supabaseClient.auth.signOut();
+    setRecoveryMode(false);
   });
 }
 
@@ -3219,7 +3269,7 @@ if (cloudSignup) {
       setSignupError(error.message);
       return;
     }
-    setCloudStatus('Cuenta creada. Revisa tu correo si pide confirmacion.', 'ok');
+    setCloudStatus('Cuenta creada. Revisa tu correo para confirmarlo.', 'ok');
     setAuthTab('login');
     if (cloudEmail) {
       cloudEmail.value = email;
@@ -3481,6 +3531,24 @@ const startApp = async () => {
   loadTheme();
   if (appVersion) {
     appVersion.textContent = APP_VERSION;
+  }
+  if (supabaseClient) {
+    const hash = location.hash.startsWith('#') ? location.hash.slice(1) : '';
+    if (hash.includes('type=recovery')) {
+      const params = new URLSearchParams(hash);
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+      if (accessToken && refreshToken) {
+        const { error } = await supabaseClient.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
+        if (!error) {
+          setRecoveryMode(true);
+          history.replaceState(null, '', `${location.pathname}${location.search}#auth`);
+        }
+      }
+    }
   }
   await initCloudAuth();
   const hashRoute = location.hash.replace('#', '');

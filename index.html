@@ -128,7 +128,7 @@
           </div>
           <div class="card">
             <div class="form__grid" id="cloudAuthForm">
-              <div class="auth-tabs" role="tablist" aria-label="Acceso">
+              <div class="auth-tabs" id="authTabs" role="tablist" aria-label="Acceso">
                 <button
                   class="auth-tab is-active"
                   type="button"
@@ -173,6 +173,9 @@
                 <p class="form__error" id="cloudError"></p>
                 <div class="form__actions">
                   <button class="button button--primary" id="cloudLogin">Entrar</button>
+                  <button class="text-button" id="forgotPassword" type="button">
+                    ¿Olvidaste tu contraseña?
+                  </button>
                 </div>
               </div>
 
@@ -220,6 +223,38 @@
                 <p class="form__error" id="cloudSignupError"></p>
                 <div class="form__actions">
                   <button class="button button--primary" id="cloudSignup">Crear cuenta</button>
+                </div>
+              </div>
+
+              <div class="auth-panel" id="authRecoveryPanel" hidden>
+                <p class="card__text">
+                  Define una nueva contraseña para recuperar el acceso a tu cuenta.
+                </p>
+                <div class="form__field">
+                  <label class="form__label" for="recoveryPassword">Nueva contraseña</label>
+                  <input
+                    class="form__input"
+                    id="recoveryPassword"
+                    type="password"
+                    autocomplete="new-password"
+                    placeholder="Minimo 6 caracteres"
+                  />
+                </div>
+                <div class="form__field">
+                  <label class="form__label" for="recoveryPasswordConfirm">Repite la contraseña</label>
+                  <input
+                    class="form__input"
+                    id="recoveryPasswordConfirm"
+                    type="password"
+                    autocomplete="new-password"
+                    placeholder="********"
+                  />
+                </div>
+                <p class="form__error" id="recoveryError"></p>
+                <div class="form__actions">
+                  <button class="button button--primary" id="recoverySubmit">
+                    Actualizar contraseña
+                  </button>
                 </div>
               </div>
 
@@ -760,6 +795,31 @@
         <div class="modal__actions">
           <button class="button button--ghost" id="confirmCancel">Cancelar</button>
           <button class="button button--primary" id="confirmOk">Confirmar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal" id="resetModal" hidden>
+      <div class="modal__overlay" id="resetOverlay"></div>
+      <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="resetTitle">
+        <h3 class="modal__title" id="resetTitle">Recuperar contraseña</h3>
+        <p class="modal__message">
+          Enviaremos un enlace para restablecer tu contraseña a este email.
+        </p>
+        <div class="form__field">
+          <label class="form__label" for="resetEmail">Email</label>
+          <input
+            class="form__input"
+            id="resetEmail"
+            type="email"
+            autocomplete="email"
+            placeholder="tu@email.com"
+          />
+        </div>
+        <p class="form__error" id="resetError"></p>
+        <div class="modal__actions">
+          <button class="button button--ghost" id="resetCancel">Cancelar</button>
+          <button class="button button--primary" id="resetSend">Enviar enlace</button>
         </div>
       </div>
     </div>
