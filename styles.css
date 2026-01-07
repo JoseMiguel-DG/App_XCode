@@ -1056,6 +1056,55 @@ body {
   gap: 14px;
 }
 
+.train-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  align-self: flex-start;
+}
+
+.train-switch__button {
+  border: none;
+  background: transparent;
+  color: var(--text);
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.train-switch__button.is-active {
+  background: rgba(124, 58, 237, 0.2);
+  border: 1px solid rgba(124, 58, 237, 0.6);
+  box-shadow: 0 8px 20px rgba(88, 28, 135, 0.35);
+}
+
+.train-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.run-hero {
+  background: linear-gradient(140deg, rgba(15, 23, 42, 0.95), rgba(17, 94, 89, 0.55));
+  border: 1px solid rgba(94, 234, 212, 0.25);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.55);
+}
+
+[data-theme="light"] .run-hero {
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.95), rgba(204, 251, 241, 0.8));
+}
+
+.run-form textarea.form__input {
+  min-height: 90px;
+}
+
 .records-hero {
   background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.9));
   border: 1px solid rgba(148, 163, 184, 0.22);
@@ -1124,6 +1173,10 @@ body {
   background: rgba(15, 23, 42, 0.7);
 }
 
+.records-table__head--running {
+  grid-template-columns: 0.9fr 0.7fr 0.7fr 0.8fr 1.2fr;
+}
+
 [data-theme="light"] .records-table__head {
   background: rgba(226, 232, 240, 0.7);
 }
@@ -1140,6 +1193,27 @@ body {
 
 .records-row:last-child {
   border-bottom: none;
+}
+
+.running-row {
+  display: grid;
+  grid-template-columns: 0.9fr 0.7fr 0.7fr 0.8fr 1.2fr;
+  gap: 16px;
+  align-items: center;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.running-row:last-child {
+  border-bottom: none;
+}
+
+.running-note {
+  font-size: 0.85rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .records-title {
@@ -1188,6 +1262,11 @@ body {
   .records-row {
     grid-template-columns: 1fr;
     gap: 10px;
+  }
+
+  .running-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 }
 

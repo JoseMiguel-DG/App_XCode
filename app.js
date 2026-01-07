@@ -41,6 +41,24 @@ const routineDayItems = document.getElementById('routineDayItems');
 const startSessionButton = document.getElementById('startSessionButton');
 const resumeSessionButton = document.getElementById('resumeSessionButton');
 const finishSessionFromHome = document.getElementById('finishSessionFromHome');
+const trainModeGym = document.getElementById('trainModeGym');
+const trainModeRun = document.getElementById('trainModeRun');
+const trainGymPanel = document.getElementById('trainGymPanel');
+const trainRunPanel = document.getElementById('trainRunPanel');
+const runningDate = document.getElementById('runningDate');
+const runningDuration = document.getElementById('runningDuration');
+const runningDistance = document.getElementById('runningDistance');
+const runningPace = document.getElementById('runningPace');
+const runningNotes = document.getElementById('runningNotes');
+const runningSave = document.getElementById('runningSave');
+const runningError = document.getElementById('runningError');
+const runningList = document.getElementById('runningList');
+const runningTotalValue = document.getElementById('runningTotalValue');
+const runningTotalMeta = document.getElementById('runningTotalMeta');
+const runningAvgPaceValue = document.getElementById('runningAvgPaceValue');
+const runningAvgPaceMeta = document.getElementById('runningAvgPaceMeta');
+const runningLastValue = document.getElementById('runningLastValue');
+const runningLastMeta = document.getElementById('runningLastMeta');
 
 const newRoutineDayButton = document.getElementById('newRoutineDayButton');
 const routineDayForm = document.getElementById('routineDayForm');
@@ -194,7 +212,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.9.3';
+const APP_VERSION = '0.10.0';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 
 const state = {
@@ -209,6 +227,7 @@ const state = {
   currentHistorySessionId: null,
   recordsSearch: '',
   recordsCategoryFilter: 'all',
+  trainMode: 'gym',
 };
 
 const createId = () =>
@@ -292,7 +311,7 @@ const updateStatus = () => {
 
 const openDatabase = () =>
   new Promise((resolve, reject) => {
-    const request = indexedDB.open(STORAGE_DB, 3);
+    const request = indexedDB.open(STORAGE_DB, 4);
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains('categories')) {
@@ -324,6 +343,11 @@ const openDatabase = () =>
         const logStore = db.createObjectStore('sessionExerciseLogs', { keyPath: 'id' });
         logStore.createIndex('sessionId', 'sessionId', { unique: false });
         logStore.createIndex('exerciseId', 'exerciseId', { unique: false });
+      }
+      if (!db.objectStoreNames.contains('runningSessions')) {
+        const runningStore = db.createObjectStore('runningSessions', { keyPath: 'id' });
+        runningStore.createIndex('finishedAt', 'finishedAt', { unique: false });
+        runningStore.createIndex('date', 'date', { unique: false });
       }
       if (!db.objectStoreNames.contains('profile')) {
         db.createObjectStore('profile', { keyPath: 'id' });
@@ -849,6 +873,26 @@ const sessionLogRepository = {
   },
 };
 
+const runningRepository = {
+  async createSession(data) {
+    const session = {
+      id: createId(),
+      date: data.date,
+      finishedAt: data.finishedAt,
+      durationSeconds: data.durationSeconds,
+      distanceKm: data.distanceKm,
+      paceSeconds: data.paceSeconds,
+      notes: data.notes || '',
+      createdAt: new Date().toISOString(),
+    };
+    await putInStore('runningSessions', session);
+    return session;
+  },
+  async listAllSessions() {
+    return getAllFromStore('runningSessions');
+  },
+};
+
 const seedData = async () => {
   if (!ENABLE_SEED) return;
   const categories = await exerciseRepository.listCategories();
@@ -1327,6 +1371,9 @@ const setView = (route) => {
   if (route === 'history') {
     renderHistoryList();
   }
+  if (route === 'train') {
+    setTrainMode(state.trainMode || 'gym');
+  }
   if (route === 'records') {
     renderRecords();
   }
@@ -1377,6 +1424,37 @@ const formatDate = (iso) => {
 
 const formatNumber = (value, maximumFractionDigits = 1) =>
   new Intl.NumberFormat('es', { maximumFractionDigits }).format(value);
+
+const formatDuration = (seconds) => {
+  if (seconds == null || Number.isNaN(seconds)) return '-';
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  const parts = [hrs, mins, secs].map((value) => String(value).padStart(2, '0'));
+  return hrs > 0 ? parts.join(':') : parts.slice(1).join(':');
+};
+
+const formatPace = (secondsPerKm) => {
+  if (secondsPerKm == null || Number.isNaN(secondsPerKm)) return '-';
+  const mins = Math.floor(secondsPerKm / 60);
+  const secs = Math.round(secondsPerKm % 60);
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}/km`;
+};
+
+const parseTimeToSeconds = (value) => {
+  if (!value) return null;
+  const parts = value.split(':').map((part) => Number(part));
+  if (parts.some((part) => Number.isNaN(part))) return null;
+  if (parts.length === 2) {
+    return parts[0] * 3600 + parts[1] * 60;
+  }
+  if (parts.length === 3) {
+    return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  }
+  return null;
+};
+
+const getTodayInputDate = () => new Date().toISOString().slice(0, 10);
 
 const confirmDialog = (message, options = {}) => {
   if (!confirmModal || !confirmMessage || !confirmCancel || !confirmOk) {
@@ -1699,6 +1777,117 @@ const renderHistoryList = async () => {
       item.appendChild(row);
       historyList.appendChild(item);
     });
+};
+
+const setTrainMode = (mode) => {
+  state.trainMode = mode;
+  if (trainModeGym) trainModeGym.classList.toggle('is-active', mode === 'gym');
+  if (trainModeRun) trainModeRun.classList.toggle('is-active', mode === 'run');
+  if (trainGymPanel) trainGymPanel.hidden = mode !== 'gym';
+  if (trainRunPanel) trainRunPanel.hidden = mode !== 'run';
+  if (mode === 'run') {
+    renderRunning();
+  }
+};
+
+const updateRunningPacePreview = () => {
+  if (!runningPace) return;
+  const distance = parseNumber(runningDistance?.value || '');
+  const durationSeconds = parseTimeToSeconds(runningDuration?.value || '');
+  if (!distance || !durationSeconds) {
+    runningPace.value = '';
+    return;
+  }
+  const paceSeconds = durationSeconds / distance;
+  runningPace.value = formatPace(paceSeconds);
+};
+
+const renderRunningSummary = (sessions) => {
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+  const recent = sessions.filter((session) => session.finishedAt && new Date(session.finishedAt) >= cutoff);
+  const totalDistance = recent.reduce((acc, session) => acc + (session.distanceKm || 0), 0);
+  const totalDuration = recent.reduce((acc, session) => acc + (session.durationSeconds || 0), 0);
+  const avgPace = totalDistance > 0 ? totalDuration / totalDistance : null;
+
+  if (runningTotalValue) {
+    runningTotalValue.textContent = totalDistance ? `${formatNumber(totalDistance, 2)} km` : '0 km';
+  }
+  if (runningTotalMeta) {
+    runningTotalMeta.textContent = recent.length ? 'km acumulados' : 'Sin sesiones recientes';
+  }
+  if (runningAvgPaceValue) {
+    runningAvgPaceValue.textContent = avgPace ? formatPace(avgPace) : '-';
+  }
+  if (runningAvgPaceMeta) {
+    runningAvgPaceMeta.textContent = recent.length ? 'Ultimos 7 dias' : 'Sin datos';
+  }
+
+  const last = sessions
+    .filter((session) => session.finishedAt)
+    .sort((a, b) => new Date(b.finishedAt) - new Date(a.finishedAt))[0];
+  if (runningLastValue) {
+    runningLastValue.textContent = last ? formatDate(last.finishedAt) : '-';
+  }
+  if (runningLastMeta) {
+    runningLastMeta.textContent = last
+      ? `${formatNumber(last.distanceKm, 2)} km · ${formatPace(last.paceSeconds)}`
+      : 'Sin datos';
+  }
+};
+
+const renderRunningList = (sessions) => {
+  if (!runningList) return;
+  runningList.innerHTML = '';
+  if (!sessions.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = 'Aun no hay sesiones de running.';
+    runningList.appendChild(empty);
+    return;
+  }
+
+  sessions.slice(0, 10).forEach((session) => {
+    const row = document.createElement('div');
+    row.className = 'running-row';
+
+    const dateCell = document.createElement('div');
+    dateCell.textContent = session.finishedAt ? formatDate(session.finishedAt) : '-';
+
+    const distanceCell = document.createElement('div');
+    distanceCell.textContent = `${formatNumber(session.distanceKm, 2)} km`;
+
+    const durationCell = document.createElement('div');
+    durationCell.textContent = formatDuration(session.durationSeconds);
+
+    const paceCell = document.createElement('div');
+    paceCell.textContent = formatPace(session.paceSeconds);
+
+    const notesCell = document.createElement('div');
+    notesCell.className = 'running-note';
+    notesCell.textContent = session.notes || '-';
+
+    row.appendChild(dateCell);
+    row.appendChild(distanceCell);
+    row.appendChild(durationCell);
+    row.appendChild(paceCell);
+    row.appendChild(notesCell);
+    runningList.appendChild(row);
+  });
+};
+
+const renderRunning = async () => {
+  if (!runningList) return;
+  if (runningDate && !runningDate.value) {
+    runningDate.value = getTodayInputDate();
+  }
+  const sessions = await runningRepository.listAllSessions();
+  const sorted = sessions
+    .filter((session) => session.finishedAt)
+    .sort((a, b) => new Date(b.finishedAt) - new Date(a.finishedAt));
+  renderRunningSummary(sorted);
+  renderRunningList(sorted);
+  updateRunningPacePreview();
 };
 
 const buildRecordsDataset = async () => {
@@ -3010,6 +3199,54 @@ if (recordsCategoryFilter) {
   });
 }
 
+if (trainModeGym) {
+  trainModeGym.addEventListener('click', () => setTrainMode('gym'));
+}
+
+if (trainModeRun) {
+  trainModeRun.addEventListener('click', () => setTrainMode('run'));
+}
+
+if (runningDistance) {
+  runningDistance.addEventListener('input', updateRunningPacePreview);
+}
+
+if (runningDuration) {
+  runningDuration.addEventListener('input', updateRunningPacePreview);
+}
+
+if (runningSave) {
+  runningSave.addEventListener('click', async () => {
+    if (runningError) runningError.textContent = '';
+    const distance = parseNumber(runningDistance?.value || '');
+    const durationSeconds = parseTimeToSeconds(runningDuration?.value || '');
+    if (!distance || distance <= 0) {
+      if (runningError) runningError.textContent = 'Introduce una distancia valida.';
+      return;
+    }
+    if (!durationSeconds || durationSeconds <= 0) {
+      if (runningError) runningError.textContent = 'Introduce un tiempo valido.';
+      return;
+    }
+    const dateValue = runningDate?.value || getTodayInputDate();
+    const finishedAt = new Date(`${dateValue}T00:00:00`).toISOString();
+    const paceSeconds = durationSeconds / distance;
+    await runningRepository.createSession({
+      date: dateValue,
+      finishedAt,
+      durationSeconds,
+      distanceKm: distance,
+      paceSeconds,
+      notes: runningNotes?.value.trim() || '',
+    });
+    if (runningDuration) runningDuration.value = '';
+    if (runningDistance) runningDistance.value = '';
+    if (runningNotes) runningNotes.value = '';
+    updateRunningPacePreview();
+    await renderRunning();
+  });
+}
+
 addRoutineItem.addEventListener('click', async (event) => {
   event.preventDefault();
   if (!state.currentRoutineDayId) return;
@@ -3132,6 +3369,7 @@ const CLOUD_STORES = [
   'routineItems',
   'trainingSessions',
   'sessionExerciseLogs',
+  'runningSessions',
   'profile',
 ];
 
@@ -3160,6 +3398,7 @@ const importPayload = async (parsed) => {
   await renderRoutineDayList();
   await renderProfile();
   await renderRecords();
+  await renderRunning();
   await renderHomeDashboard();
 };
 
@@ -4226,6 +4465,7 @@ const startApp = async () => {
     await renderRoutineDayList();
     await refreshTrainingHome();
     await renderProfile();
+    await renderRunning();
   } catch (error) {
     console.error('No se pudo inicializar la base local.', error);
     statusBadge.textContent = 'Error de datos';

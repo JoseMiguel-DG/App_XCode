@@ -72,7 +72,7 @@
       media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)"
     />
 
-    <link rel="stylesheet" href="styles.css?v=0.9.3" />
+    <link rel="stylesheet" href="styles.css?v=0.10.0" />
   </head>
   <body>
     <div class="app">
@@ -402,28 +402,111 @@
           <div class="panel__header">
             <div>
               <h2>Entrenar</h2>
-              <p class="panel__subtitle">Selecciona un dia y revisa la rutina.</p>
+              <p class="panel__subtitle">Elige modo de entrenamiento y registra tu sesion.</p>
             </div>
           </div>
 
-          <div class="card">
-            <label class="form__label" for="routineDaySelect">Dia</label>
-            <select class="form__input" id="routineDaySelect"></select>
-            <p class="form__error" id="routineDaySelectError"></p>
-          </div>
-
-          <div class="card" id="routineDayPreview">
-            <p class="card__title" id="routineDayName">Sin rutina</p>
-            <p class="card__text" id="routineDayNotes"></p>
-            <ul class="list list--compact" id="routineDayItems"></ul>
-          </div>
-
-          <div class="panel__actions" id="trainingActionButtons">
-            <button class="button button--primary" id="startSessionButton">Iniciar sesion</button>
-            <button class="button button--ghost" id="resumeSessionButton" hidden>Reanudar sesion</button>
-            <button class="button button--danger" id="finishSessionFromHome" hidden>
-              Finalizar sesion
+          <div class="train-switch">
+            <button class="train-switch__button is-active" id="trainModeGym" type="button">
+              Gym
             </button>
+            <button class="train-switch__button" id="trainModeRun" type="button">
+              Running
+            </button>
+          </div>
+
+          <div class="train-panel" id="trainGymPanel">
+            <div class="card">
+              <label class="form__label" for="routineDaySelect">Dia</label>
+              <select class="form__input" id="routineDaySelect"></select>
+              <p class="form__error" id="routineDaySelectError"></p>
+            </div>
+
+            <div class="card" id="routineDayPreview">
+              <p class="card__title" id="routineDayName">Sin rutina</p>
+              <p class="card__text" id="routineDayNotes"></p>
+              <ul class="list list--compact" id="routineDayItems"></ul>
+            </div>
+
+            <div class="panel__actions" id="trainingActionButtons">
+              <button class="button button--primary" id="startSessionButton">Iniciar sesion</button>
+              <button class="button button--ghost" id="resumeSessionButton" hidden>
+                Reanudar sesion
+              </button>
+              <button class="button button--danger" id="finishSessionFromHome" hidden>
+                Finalizar sesion
+              </button>
+            </div>
+          </div>
+
+          <div class="train-panel" id="trainRunPanel" hidden>
+            <div class="card run-hero">
+              <div>
+                <p class="hero-card__eyebrow">Performance running</p>
+                <h3 class="hero-card__title">Registra tiempo, distancia y ritmo con precision.</h3>
+                <p class="card__text">Datos limpios para seguimiento tecnico y comparables.</p>
+              </div>
+            </div>
+
+            <div class="records-grid">
+              <div class="card records-metric">
+                <p class="records-metric__label">Total 7 dias</p>
+                <p class="records-metric__value" id="runningTotalValue">-</p>
+                <p class="records-metric__meta" id="runningTotalMeta">km acumulados</p>
+              </div>
+              <div class="card records-metric">
+                <p class="records-metric__label">Ritmo medio</p>
+                <p class="records-metric__value" id="runningAvgPaceValue">-</p>
+                <p class="records-metric__meta" id="runningAvgPaceMeta">Ultimos 7 dias</p>
+              </div>
+              <div class="card records-metric">
+                <p class="records-metric__label">Ultima sesion</p>
+                <p class="records-metric__value" id="runningLastValue">-</p>
+                <p class="records-metric__meta" id="runningLastMeta">Sin datos</p>
+              </div>
+            </div>
+
+            <div class="card run-form">
+              <div class="records-controls__row">
+                <div class="form__field">
+                  <label class="form__label" for="runningDate">Fecha</label>
+                  <input class="form__input" id="runningDate" type="date" />
+                </div>
+                <div class="form__field">
+                  <label class="form__label" for="runningDuration">Tiempo</label>
+                  <input class="form__input" id="runningDuration" type="time" step="1" />
+                </div>
+                <div class="form__field">
+                  <label class="form__label" for="runningDistance">Distancia (km)</label>
+                  <input class="form__input" id="runningDistance" type="number" step="0.01" />
+                </div>
+                <div class="form__field">
+                  <label class="form__label" for="runningPace">Ritmo</label>
+                  <input class="form__input" id="runningPace" type="text" readonly />
+                </div>
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="runningNotes">Notas</label>
+                <textarea class="form__input" id="runningNotes" rows="2"></textarea>
+              </div>
+              <div class="panel__actions">
+                <button class="button button--primary" id="runningSave" type="button">
+                  Guardar running
+                </button>
+              </div>
+              <p class="form__error" id="runningError"></p>
+            </div>
+
+            <div class="card records-table">
+              <div class="records-table__head records-table__head--running">
+                <span>Fecha</span>
+                <span>Distancia</span>
+                <span>Tiempo</span>
+                <span>Ritmo</span>
+                <span>Notas</span>
+              </div>
+              <div class="records-table__body" id="runningList"></div>
+            </div>
           </div>
         </section>
 
@@ -1042,6 +1125,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=0.9.3"></script>
+    <script src="app.js?v=0.10.0"></script>
   </body>
 </html>
