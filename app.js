@@ -212,7 +212,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.10.0';
+const APP_VERSION = '0.10.1';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 
 const state = {
@@ -228,6 +228,7 @@ const state = {
   recordsSearch: '',
   recordsCategoryFilter: 'all',
   trainMode: 'gym',
+  runningPaceManual: false,
 };
 
 const createId = () =>
@@ -1454,6 +1455,13 @@ const parseTimeToSeconds = (value) => {
   return null;
 };
 
+const parsePaceToSeconds = (value) => {
+  if (!value) return null;
+  const parts = value.split(':').map((part) => Number(part));
+  if (parts.length !== 2 || parts.some((part) => Number.isNaN(part))) return null;
+  return parts[0] * 60 + parts[1];
+};
+
 const getTodayInputDate = () => new Date().toISOString().slice(0, 10);
 
 const confirmDialog = (message, options = {}) => {
@@ -1792,6 +1800,7 @@ const setTrainMode = (mode) => {
 
 const updateRunningPacePreview = () => {
   if (!runningPace) return;
+  if (state.runningPaceManual && runningPace.value) return;
   const distance = parseNumber(runningDistance?.value || '');
   const durationSeconds = parseTimeToSeconds(runningDuration?.value || '');
   if (!distance || !durationSeconds) {
@@ -3215,6 +3224,13 @@ if (runningDuration) {
   runningDuration.addEventListener('input', updateRunningPacePreview);
 }
 
+if (runningPace) {
+  runningPace.addEventListener('input', (event) => {
+    const value = event.target.value.trim();
+    state.runningPaceManual = value.length > 0;
+  });
+}
+
 if (runningSave) {
   runningSave.addEventListener('click', async () => {
     if (runningError) runningError.textContent = '';
@@ -3230,7 +3246,16 @@ if (runningSave) {
     }
     const dateValue = runningDate?.value || getTodayInputDate();
     const finishedAt = new Date(`${dateValue}T00:00:00`).toISOString();
-    const paceSeconds = durationSeconds / distance;
+    let paceSeconds = null;
+    if (runningPace?.value) {
+      paceSeconds = parsePaceToSeconds(runningPace.value.trim());
+      if (!paceSeconds || paceSeconds <= 0) {
+        if (runningError) runningError.textContent = 'Introduce un ritmo valido (mm:ss).';
+        return;
+      }
+    } else {
+      paceSeconds = durationSeconds / distance;
+    }
     await runningRepository.createSession({
       date: dateValue,
       finishedAt,
@@ -3241,7 +3266,9 @@ if (runningSave) {
     });
     if (runningDuration) runningDuration.value = '';
     if (runningDistance) runningDistance.value = '';
+    if (runningPace) runningPace.value = '';
     if (runningNotes) runningNotes.value = '';
+    state.runningPaceManual = false;
     updateRunningPacePreview();
     await renderRunning();
   });
