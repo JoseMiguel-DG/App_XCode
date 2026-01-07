@@ -34,6 +34,7 @@ returns table(user_id uuid, email text, display_name text)
 language sql
 security definer
 set search_path = public
+set row_security = off
 as $$
   select user_id, email, display_name
   from public.profiles
