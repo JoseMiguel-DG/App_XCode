@@ -112,6 +112,10 @@ const recordsBestValue = document.getElementById('recordsBestValue');
 const recordsBestMeta = document.getElementById('recordsBestMeta');
 const recordsLastValue = document.getElementById('recordsLastValue');
 const recordsLastMeta = document.getElementById('recordsLastMeta');
+const recordsModeGym = document.getElementById('recordsModeGym');
+const recordsModeRun = document.getElementById('recordsModeRun');
+const recordsGymPanel = document.getElementById('recordsGymPanel');
+const recordsRunPanel = document.getElementById('recordsRunPanel');
 const recordsRunningList = document.getElementById('recordsRunningList');
 const recordsRunningTotalValue = document.getElementById('recordsRunningTotalValue');
 const recordsRunningTotalMeta = document.getElementById('recordsRunningTotalMeta');
@@ -224,7 +228,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.10.4';
+const APP_VERSION = '0.10.5';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 
 const state = {
@@ -242,6 +246,7 @@ const state = {
   trainMode: 'gym',
   runningPaceManual: false,
   historyMode: 'gym',
+  recordsMode: 'gym',
 };
 
 const createId = () =>
@@ -1389,7 +1394,7 @@ const setView = (route) => {
     setTrainMode(state.trainMode || 'gym');
   }
   if (route === 'records') {
-    renderRecords();
+    setRecordsMode(state.recordsMode || 'gym');
   }
   if (route === 'routines') {
     routineEditor.hidden = true;
@@ -2057,6 +2062,19 @@ const renderRunningRecords = async () => {
   });
 };
 
+const setRecordsMode = (mode) => {
+  state.recordsMode = mode;
+  if (recordsModeGym) recordsModeGym.classList.toggle('is-active', mode === 'gym');
+  if (recordsModeRun) recordsModeRun.classList.toggle('is-active', mode === 'run');
+  if (recordsGymPanel) recordsGymPanel.hidden = mode !== 'gym';
+  if (recordsRunPanel) recordsRunPanel.hidden = mode !== 'run';
+  if (mode === 'gym') {
+    renderRecords();
+  } else {
+    renderRunningRecords();
+  }
+};
+
 const buildRecordsDataset = async () => {
   const [exercises, categories, sessions, logs] = await Promise.all([
     exerciseRepository.listAllExercises(),
@@ -2270,8 +2288,6 @@ const renderRecords = async () => {
     row.appendChild(sessionsCell);
     recordsList.appendChild(row);
   });
-
-  await renderRunningRecords();
 };
 
 const openHistorySession = async (sessionId) => {
@@ -3368,6 +3384,14 @@ if (recordsCategoryFilter) {
   });
 }
 
+if (recordsModeGym) {
+  recordsModeGym.addEventListener('click', () => setRecordsMode('gym'));
+}
+
+if (recordsModeRun) {
+  recordsModeRun.addEventListener('click', () => setRecordsMode('run'));
+}
+
 if (historyModeGym) {
   historyModeGym.addEventListener('click', () => setHistoryMode('gym'));
 }
@@ -3595,6 +3619,7 @@ const importPayload = async (parsed) => {
   await renderRoutineDayList();
   await renderProfile();
   await renderRecords();
+  await renderRunningRecords();
   await renderRunning();
   await renderHomeDashboard();
 };

@@ -72,7 +72,7 @@
       media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)"
     />
 
-    <link rel="stylesheet" href="styles.css?v=0.10.4" />
+    <link rel="stylesheet" href="styles.css?v=0.10.5" />
   </head>
   <body>
     <div class="app">
@@ -570,96 +570,110 @@
             </div>
           </div>
 
-          <div class="card records-hero">
-            <div>
-              <p class="hero-card__eyebrow">Analisis de fuerza</p>
-              <h3 class="hero-card__title">Todos tus PRs en un panel de control profesional.</h3>
-              <p class="card__text">
-                Consulta tu mejor marca, e1RM y sesiones registradas por ejercicio.
-              </p>
-            </div>
+          <div class="train-switch">
+            <button class="train-switch__button is-active" id="recordsModeGym" type="button">
+              Gym
+            </button>
+            <button class="train-switch__button" id="recordsModeRun" type="button">
+              Running
+            </button>
           </div>
 
-          <div class="records-grid">
-            <div class="card records-metric">
-              <p class="records-metric__label">PRs totales</p>
-              <p class="records-metric__value" id="recordsTotalValue">-</p>
-              <p class="records-metric__meta" id="recordsTotalMeta">Ejercicios con PR</p>
-            </div>
-            <div class="card records-metric">
-              <p class="records-metric__label">Mejor PR</p>
-              <p class="records-metric__value" id="recordsBestValue">-</p>
-              <p class="records-metric__meta" id="recordsBestMeta">Sin datos</p>
-            </div>
-            <div class="card records-metric">
-              <p class="records-metric__label">Ultimo PR</p>
-              <p class="records-metric__value" id="recordsLastValue">-</p>
-              <p class="records-metric__meta" id="recordsLastMeta">Sin datos</p>
-            </div>
-          </div>
-
-          <div class="card records-controls">
-            <div class="records-controls__row">
-              <div class="form__field">
-                <label class="form__label" for="recordsSearch">Buscar ejercicio</label>
-                <input
-                  class="form__input"
-                  id="recordsSearch"
-                  type="search"
-                  placeholder="Press banca, sentadilla..."
-                />
-              </div>
-              <div class="form__field">
-                <label class="form__label" for="recordsCategoryFilter">Categoria</label>
-                <select class="form__input" id="recordsCategoryFilter"></select>
+          <div class="train-panel" id="recordsGymPanel">
+            <div class="card records-hero">
+              <div>
+                <p class="hero-card__eyebrow">Analisis de fuerza</p>
+                <h3 class="hero-card__title">Todos tus PRs en un panel de control profesional.</h3>
+                <p class="card__text">
+                  Consulta tu mejor marca, e1RM y sesiones registradas por ejercicio.
+                </p>
               </div>
             </div>
+
+            <div class="records-grid">
+              <div class="card records-metric">
+                <p class="records-metric__label">PRs totales</p>
+                <p class="records-metric__value" id="recordsTotalValue">-</p>
+                <p class="records-metric__meta" id="recordsTotalMeta">Ejercicios con PR</p>
+              </div>
+              <div class="card records-metric">
+                <p class="records-metric__label">Mejor PR</p>
+                <p class="records-metric__value" id="recordsBestValue">-</p>
+                <p class="records-metric__meta" id="recordsBestMeta">Sin datos</p>
+              </div>
+              <div class="card records-metric">
+                <p class="records-metric__label">Ultimo PR</p>
+                <p class="records-metric__value" id="recordsLastValue">-</p>
+                <p class="records-metric__meta" id="recordsLastMeta">Sin datos</p>
+              </div>
+            </div>
+
+            <div class="card records-controls">
+              <div class="records-controls__row">
+                <div class="form__field">
+                  <label class="form__label" for="recordsSearch">Buscar ejercicio</label>
+                  <input
+                    class="form__input"
+                    id="recordsSearch"
+                    type="search"
+                    placeholder="Press banca, sentadilla..."
+                  />
+                </div>
+                <div class="form__field">
+                  <label class="form__label" for="recordsCategoryFilter">Categoria</label>
+                  <select class="form__input" id="recordsCategoryFilter"></select>
+                </div>
+              </div>
+            </div>
+
+            <div class="card records-table">
+              <div class="records-table__head">
+                <span>Ejercicio</span>
+                <span>PR</span>
+                <span>Fecha</span>
+                <span>Sesiones</span>
+              </div>
+              <div class="records-table__body" id="recordsList"></div>
+            </div>
           </div>
 
-          <div class="card records-table">
-            <div class="records-table__head">
-              <span>Ejercicio</span>
-              <span>PR</span>
-              <span>Fecha</span>
-              <span>Sesiones</span>
+          <div class="train-panel" id="recordsRunPanel" hidden>
+            <div class="card run-hero">
+              <div>
+                <p class="hero-card__eyebrow">Running analytics</p>
+                <h3 class="hero-card__title">Controla volumen, ritmo y consistencia.</h3>
+                <p class="card__text">Resumen tecnico de tus carreras en 30 dias.</p>
+              </div>
             </div>
-            <div class="records-table__body" id="recordsList"></div>
-          </div>
 
-          <div class="panel__header panel__header--tight">
-            <div>
-              <h3>Running</h3>
-              <p class="panel__subtitle">Resumen tecnico de tus carreras.</p>
+            <div class="records-grid">
+              <div class="card records-metric">
+                <p class="records-metric__label">Total 30 dias</p>
+                <p class="records-metric__value" id="recordsRunningTotalValue">-</p>
+                <p class="records-metric__meta" id="recordsRunningTotalMeta">km acumulados</p>
+              </div>
+              <div class="card records-metric">
+                <p class="records-metric__label">Ritmo medio</p>
+                <p class="records-metric__value" id="recordsRunningPaceValue">-</p>
+                <p class="records-metric__meta" id="recordsRunningPaceMeta">Ultimos 30 dias</p>
+              </div>
+              <div class="card records-metric">
+                <p class="records-metric__label">Sesion mas larga</p>
+                <p class="records-metric__value" id="recordsRunningLongestValue">-</p>
+                <p class="records-metric__meta" id="recordsRunningLongestMeta">Sin datos</p>
+              </div>
             </div>
-          </div>
 
-          <div class="records-grid">
-            <div class="card records-metric">
-              <p class="records-metric__label">Total 30 dias</p>
-              <p class="records-metric__value" id="recordsRunningTotalValue">-</p>
-              <p class="records-metric__meta" id="recordsRunningTotalMeta">km acumulados</p>
+            <div class="card records-table">
+              <div class="records-table__head records-table__head--running">
+                <span>Fecha</span>
+                <span>Distancia</span>
+                <span>Tiempo</span>
+                <span>Ritmo</span>
+                <span>Notas</span>
+              </div>
+              <div class="records-table__body" id="recordsRunningList"></div>
             </div>
-            <div class="card records-metric">
-              <p class="records-metric__label">Ritmo medio</p>
-              <p class="records-metric__value" id="recordsRunningPaceValue">-</p>
-              <p class="records-metric__meta" id="recordsRunningPaceMeta">Ultimos 30 dias</p>
-            </div>
-            <div class="card records-metric">
-              <p class="records-metric__label">Sesion mas larga</p>
-              <p class="records-metric__value" id="recordsRunningLongestValue">-</p>
-              <p class="records-metric__meta" id="recordsRunningLongestMeta">Sin datos</p>
-            </div>
-          </div>
-
-          <div class="card records-table">
-            <div class="records-table__head records-table__head--running">
-              <span>Fecha</span>
-              <span>Distancia</span>
-              <span>Tiempo</span>
-              <span>Ritmo</span>
-              <span>Notas</span>
-            </div>
-            <div class="records-table__body" id="recordsRunningList"></div>
           </div>
         </section>
 
@@ -1190,6 +1204,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=0.10.4"></script>
+    <script src="app.js?v=0.10.5"></script>
   </body>
 </html>
