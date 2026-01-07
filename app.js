@@ -143,6 +143,7 @@ const confirmMessage = document.getElementById('confirmMessage');
 const confirmCancel = document.getElementById('confirmCancel');
 const confirmOk = document.getElementById('confirmOk');
 const AUTO_SW_UPDATE = true;
+const ENABLE_SERVICE_WORKER = false;
 const homeConsistencyCard = document.getElementById('homeConsistencyCard');
 const homeConsistencyValue = document.getElementById('homeConsistencyValue');
 const homeConsistencyBar = document.getElementById('homeConsistencyBar');
@@ -178,10 +179,11 @@ const LAST_ROUTINE_DAY_KEY = 'last-routine-day-id';
 const ENABLE_SEED = true;
 const CLOUD_LOCAL_UPDATED_KEY = 'cloud-local-updated-at';
 const CLOUD_LAST_UPLOADED_KEY = 'cloud-last-uploaded-at';
-const CLOUD_POLL_INTERVAL_MS = 5000;
+const CLOUD_POLL_INTERVAL_MS = 2000;
+const CLOUD_SYNC_DELAY_MS = 100;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.9.0';
+const APP_VERSION = '0.9.1';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 
 const state = {
@@ -209,6 +211,7 @@ let cloudUser = null;
 let cloudSyncTimer = null;
 let cloudSyncInFlight = false;
 let cloudPollTimer = null;
+let cloudRealtimeChannel = null;
 let isCloudImporting = false;
 let isSeeding = false;
 let cloudReady = false;
@@ -229,7 +232,7 @@ const scheduleCloudSync = () => {
   );
   cloudSyncTimer = setTimeout(async () => {
     await performCloudUpload();
-  }, 1200);
+  }, CLOUD_SYNC_DELAY_MS);
 };
 
 const ICONS = {
@@ -361,8 +364,8 @@ const putInStore = async (storeName, value) => {
     transaction.oncomplete = () => {
       if (!isCloudImporting && !isSeeding) {
         setLocalUpdatedAt(new Date());
+        scheduleCloudSync();
       }
-      scheduleCloudSync();
     };
   });
 };
@@ -378,8 +381,8 @@ const deleteFromStore = async (storeName, id) => {
     transaction.oncomplete = () => {
       if (!isCloudImporting && !isSeeding) {
         setLocalUpdatedAt(new Date());
+        scheduleCloudSync();
       }
-      scheduleCloudSync();
     };
   });
 };
@@ -395,8 +398,8 @@ const clearStore = async (storeName) => {
     transaction.oncomplete = () => {
       if (!isCloudImporting && !isSeeding) {
         setLocalUpdatedAt(new Date());
+        scheduleCloudSync();
       }
-      scheduleCloudSync();
     };
   });
 };
@@ -2877,16 +2880,18 @@ cancelSessionButton.addEventListener('click', async () => {
   await refreshTrainingHome();
 });
 
+const CLOUD_STORES = [
+  'categories',
+  'exercises',
+  'routineDays',
+  'routineItems',
+  'trainingSessions',
+  'sessionExerciseLogs',
+  'profile',
+];
+
 const getExportPayload = async () => {
-  const stores = [
-    'categories',
-    'exercises',
-    'routineDays',
-    'routineItems',
-    'trainingSessions',
-    'sessionExerciseLogs',
-    'profile',
-  ];
+  const stores = CLOUD_STORES;
   const payload = { exportedAt: new Date().toISOString(), version: 2, data: {} };
   for (const store of stores) {
     payload.data[store] = await getAllFromStore(store);
@@ -2898,16 +2903,7 @@ const importPayload = async (parsed) => {
   if (!parsed || !parsed.data) {
     throw new Error('Formato incorrecto.');
   }
-  const stores = [
-    'categories',
-    'exercises',
-    'routineDays',
-    'routineItems',
-    'trainingSessions',
-    'sessionExerciseLogs',
-    'profile',
-  ];
-  for (const store of stores) {
+  for (const store of CLOUD_STORES) {
     await clearStore(store);
     const items = parsed.data[store] || [];
     for (const item of items) {
@@ -2919,6 +2915,24 @@ const importPayload = async (parsed) => {
   await renderRoutineDayList();
   await renderProfile();
   await renderHomeDashboard();
+};
+
+const clearCloudMetadata = () => {
+  localStorage.removeItem(LAST_ROUTINE_DAY_KEY);
+  localStorage.removeItem(CLOUD_LOCAL_UPDATED_KEY);
+  localStorage.removeItem(CLOUD_LAST_UPLOADED_KEY);
+};
+
+const clearLocalUserData = async () => {
+  try {
+    isCloudImporting = true;
+    for (const store of CLOUD_STORES) {
+      await clearStore(store);
+    }
+    clearCloudMetadata();
+  } finally {
+    isCloudImporting = false;
+  }
 };
 
 const setCloudError = (message) => {
@@ -3180,6 +3194,30 @@ const stopCloudPolling = () => {
   }
 };
 
+const startCloudRealtime = () => {
+  if (!supabaseClient || !cloudUser) return;
+  if (cloudRealtimeChannel) {
+    cloudRealtimeChannel.unsubscribe();
+    cloudRealtimeChannel = null;
+  }
+  cloudRealtimeChannel = supabaseClient
+    .channel(`user-data-${cloudUser.id}`)
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'user_data', filter: `user_id=eq.${cloudUser.id}` },
+      () => {
+        syncFromCloudIfNewer();
+      }
+    )
+    .subscribe();
+};
+
+const stopCloudRealtime = () => {
+  if (!cloudRealtimeChannel) return;
+  cloudRealtimeChannel.unsubscribe();
+  cloudRealtimeChannel = null;
+};
+
 const cleanupEmptySessions = async () => {
   const sessions = await trainingRepository.listAllSessions();
   const active = sessions.filter((session) => !session.finishedAt);
@@ -3232,12 +3270,15 @@ const updateCloudUI = (user) => {
     if (cloudAuthForm) cloudAuthForm.hidden = true;
     renderProfile();
     startCloudPolling();
+    startCloudRealtime();
     const route = location.hash.replace('#', '') || 'home';
     setView(route === 'auth' ? 'home' : route);
   } else {
     setCloudStatus('No autenticado.', 'warn');
     setCloudControls(false);
     stopCloudPolling();
+    stopCloudRealtime();
+    clearLocalUserData();
     if (profileMenu) {
       profileMenu.hidden = true;
     }
@@ -3268,6 +3309,7 @@ const maybeAutoDownload = async (user) => {
   if (!supabaseClient || !user) return;
   const cloudPayload = await fetchCloudPayload();
   if (!cloudPayload) {
+    await clearLocalUserData();
     setCloudStatus('No hay datos en la nube.', 'warn');
     return;
   }
@@ -3777,10 +3819,22 @@ window.addEventListener('online', () => {
   if (cloudSyncPending) {
     scheduleCloudSync();
   }
+  if (isAuthenticated) {
+    syncFromCloudIfNewer();
+  }
 });
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    if (!ENABLE_SERVICE_WORKER) {
+      navigator.serviceWorker.getRegistrations().then((registrations) => {
+        registrations.forEach((registration) => registration.unregister());
+      });
+      if (window.caches) {
+        caches.keys().then((keys) => keys.forEach((key) => caches.delete(key)));
+      }
+      return;
+    }
     navigator.serviceWorker.register('./service-worker.js').then((registration) => {
       const applyUpdate = () => {
         if (!registration.waiting) return;
