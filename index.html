@@ -75,7 +75,7 @@
       media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)"
     />
 
-    <link rel="stylesheet" href="styles.css?v=0.11.1" />
+    <link rel="stylesheet" href="styles.css?v=0.11.3" />
   </head>
   <body>
     <div class="app">
@@ -165,6 +165,7 @@
         <button class="nav__button" data-route="routines">Rutinas</button>
         <button class="nav__button" data-route="history">Historial</button>
         <button class="nav__button" data-route="records">Records</button>
+        <button class="nav__button" data-route="friends">Amigos</button>
         <button class="nav__button" data-route="exercises">Biblioteca</button>
       </nav>
 
@@ -689,6 +690,68 @@
                 <span>Notas</span>
               </div>
               <div class="records-table__body" id="recordsRunningList"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel" data-view="friends" hidden>
+          <div class="panel__header">
+            <div>
+              <h2>Amigos</h2>
+              <p class="panel__subtitle">Solicitudes, perfiles y actividad reciente.</p>
+            </div>
+          </div>
+
+          <div class="friends-layout">
+            <div class="friends-stack">
+              <div class="card">
+                <p class="card__title">Agregar amigo</p>
+                <div class="records-controls__row">
+                  <div class="form__field">
+                    <label class="form__label" for="friendEmail">Email</label>
+                    <input class="form__input" id="friendEmail" type="email" />
+                  </div>
+                  <div class="form__field">
+                    <label class="form__label">&nbsp;</label>
+                    <button class="button button--primary" id="friendAdd">Enviar solicitud</button>
+                  </div>
+                </div>
+                <p class="form__error" id="friendError"></p>
+              </div>
+
+              <div class="card">
+                <p class="card__title">Solicitudes</p>
+                <div class="stack" id="friendRequestsList"></div>
+              </div>
+
+              <div class="card">
+                <p class="card__title">Amigos</p>
+                <div class="stack" id="friendsList"></div>
+              </div>
+
+              <div class="card">
+                <p class="card__title">Notificaciones</p>
+                <div class="stack" id="friendsNotificationsList"></div>
+              </div>
+            </div>
+
+            <div class="card friends-profile" id="friendsProfile" hidden>
+              <div class="friends-profile__header">
+                <div class="friends-profile__avatar" id="friendsProfileAvatar"></div>
+                <div>
+                  <p class="friends-profile__name" id="friendsProfileName"></p>
+                  <p class="friends-profile__bio" id="friendsProfileBio"></p>
+                </div>
+              </div>
+              <div class="friends-profile__stats" id="friendsProfileStats"></div>
+              <div class="friends-profile__section">
+                <p class="card__title">Entrenos recientes</p>
+                <div class="stack" id="friendsProfileRecent"></div>
+              </div>
+              <div class="friends-profile__actions">
+                <button class="button button--ghost" id="friendsRemove">Eliminar amigo</button>
+                <button class="button button--danger" id="friendsBlock">Bloquear</button>
+              </div>
             </div>
           </div>
         </section>
@@ -1220,6 +1283,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=0.11.1"></script>
+    <script src="app.js?v=0.11.3"></script>
   </body>
 </html>

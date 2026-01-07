@@ -125,6 +125,20 @@ const recordsRunningPaceValue = document.getElementById('recordsRunningPaceValue
 const recordsRunningPaceMeta = document.getElementById('recordsRunningPaceMeta');
 const recordsRunningLongestValue = document.getElementById('recordsRunningLongestValue');
 const recordsRunningLongestMeta = document.getElementById('recordsRunningLongestMeta');
+const friendEmail = document.getElementById('friendEmail');
+const friendAdd = document.getElementById('friendAdd');
+const friendError = document.getElementById('friendError');
+const friendRequestsList = document.getElementById('friendRequestsList');
+const friendsList = document.getElementById('friendsList');
+const friendsNotificationsList = document.getElementById('friendsNotificationsList');
+const friendsProfile = document.getElementById('friendsProfile');
+const friendsProfileAvatar = document.getElementById('friendsProfileAvatar');
+const friendsProfileName = document.getElementById('friendsProfileName');
+const friendsProfileBio = document.getElementById('friendsProfileBio');
+const friendsProfileStats = document.getElementById('friendsProfileStats');
+const friendsProfileRecent = document.getElementById('friendsProfileRecent');
+const friendsRemove = document.getElementById('friendsRemove');
+const friendsBlock = document.getElementById('friendsBlock');
 const profileMenu = document.getElementById('profileMenu');
 const profileButton = document.getElementById('profileButton');
 const settingsButton = document.getElementById('settingsButton');
@@ -230,8 +244,14 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.11.1';
+const APP_VERSION = '0.11.3';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
+const FRIEND_STATUS = {
+  PENDING: 'pending',
+  ACCEPTED: 'accepted',
+  REJECTED: 'rejected',
+  BLOCKED: 'blocked',
+};
 
 const state = {
   theme: 'dark',
@@ -249,6 +269,7 @@ const state = {
   runningPaceManual: false,
   historyMode: 'gym',
   recordsMode: 'gym',
+  currentFriendId: null,
 };
 
 const createId = () =>
@@ -272,6 +293,11 @@ let cloudSyncPending = false;
 let isAuthenticated = false;
 let confirmResolver = null;
 let currentProfileAvatar = '';
+let friendsCache = {
+  friendships: [],
+  profiles: new Map(),
+  notifications: [],
+};
 
 const scheduleCloudSync = () => {
   if (!supabaseClient || !cloudUser || isCloudImporting || !cloudReady) return;
@@ -1401,6 +1427,9 @@ const setView = (route) => {
   if (route === 'records') {
     setRecordsMode(state.recordsMode || 'gym');
   }
+  if (route === 'friends') {
+    renderFriendsView();
+  }
   if (route === 'routines') {
     routineEditor.hidden = true;
     state.expandedRoutineItemId = null;
@@ -1524,6 +1553,158 @@ const buildRunningRow = (session, { withDelete, onDelete } = {}) => {
   }
 
   return row;
+};
+
+const getFriendshipFriendId = (row) =>
+  row.requester_id === cloudUser?.id ? row.addressee_id : row.requester_id;
+
+const fetchProfilesByIds = async (userIds) => {
+  if (!supabaseClient || !cloudUser || userIds.length === 0) return [];
+  const { data, error } = await supabaseClient
+    .from('profiles')
+    .select('user_id, email, display_name, bio, avatar_url')
+    .in('user_id', userIds);
+  if (error) {
+    setCloudError(error.message);
+    return [];
+  }
+  return data || [];
+};
+
+const fetchProfileByEmail = async (email) => {
+  if (!supabaseClient) return null;
+  const { data, error } = await supabaseClient.rpc('find_profile_by_email', {
+    email_input: email,
+  });
+  if (error) {
+    setCloudError(error.message);
+    return null;
+  }
+  return data || null;
+};
+
+const fetchFriendUserData = async (userId) => {
+  if (!supabaseClient) return null;
+  const { data, error } = await supabaseClient
+    .from('user_data')
+    .select('data, updated_at')
+    .eq('user_id', userId)
+    .maybeSingle();
+  if (error) {
+    setCloudError(error.message);
+    return null;
+  }
+  return data?.data || null;
+};
+
+const buildFriendStats = (payload) => {
+  const sessions = payload?.data?.trainingSessions || [];
+  const running = payload?.data?.runningSessions || [];
+  const finishedGym = sessions
+    .filter((session) => session.finishedAt)
+    .sort((a, b) => new Date(b.finishedAt) - new Date(a.finishedAt));
+  const gymCount = finishedGym.length;
+  const runningCount = running.length;
+  const runningDistance = running.reduce((acc, session) => acc + (session.distanceKm || 0), 0);
+  return [
+    { label: 'Sesiones gym', value: gymCount ? `${gymCount}` : '0' },
+    { label: 'Carreras', value: runningCount ? `${runningCount}` : '0' },
+    { label: 'Km running', value: runningDistance ? `${formatNumber(runningDistance, 1)} km` : '0 km' },
+    {
+      label: 'Ultima sesion',
+      value: finishedGym[0]?.finishedAt ? formatDate(finishedGym[0].finishedAt) : '-',
+    },
+  ];
+};
+
+const buildFriendRecent = (payload) => {
+  const sessions = payload?.data?.trainingSessions || [];
+  const running = payload?.data?.runningSessions || [];
+  const routineDays = payload?.data?.routineDays || [];
+  const routineMap = new Map(routineDays.map((day) => [day.id, day.name]));
+  const gym = sessions
+    .filter((session) => session.finishedAt)
+    .map((session) => ({
+      type: 'gym',
+      date: session.finishedAt,
+      session,
+      routineName: routineMap.get(session.routineDayId) || 'Sesion gym',
+    }));
+  const runs = running.map((session) => ({ type: 'run', date: session.finishedAt, session }));
+  return [...gym, ...runs]
+    .filter((entry) => entry.date)
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 5);
+};
+
+const renderFriendProfile = async (friendId) => {
+  if (!friendsProfile) return;
+  const profile = friendsCache.profiles.get(friendId);
+  if (!profile) {
+    friendsProfile.hidden = true;
+    return;
+  }
+  state.currentFriendId = friendId;
+  friendsProfile.hidden = false;
+  if (friendsProfileName) friendsProfileName.textContent = profile.display_name || 'Sin nombre';
+  if (friendsProfileBio) friendsProfileBio.textContent = profile.bio || 'Sin bio.';
+  if (friendsProfileAvatar) {
+    friendsProfileAvatar.style.backgroundImage = profile.avatar_url
+      ? `url('${profile.avatar_url}')`
+      : '';
+  }
+  if (friendsProfileStats) {
+    friendsProfileStats.innerHTML = '';
+  }
+  if (friendsProfileRecent) {
+    friendsProfileRecent.innerHTML = '';
+  }
+  const payload = await fetchFriendUserData(friendId);
+  if (friendsProfileStats) {
+    const stats = buildFriendStats(payload);
+    stats.forEach((stat) => {
+      const card = document.createElement('div');
+      card.className = 'friends-stat';
+      const label = document.createElement('div');
+      label.className = 'friends-stat__label';
+      label.textContent = stat.label;
+      const value = document.createElement('div');
+      value.className = 'friends-stat__value';
+      value.textContent = stat.value;
+      card.appendChild(label);
+      card.appendChild(value);
+      friendsProfileStats.appendChild(card);
+    });
+  }
+  if (friendsProfileRecent) {
+    const recent = buildFriendRecent(payload);
+    if (recent.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = 'Sin actividad reciente.';
+      friendsProfileRecent.appendChild(empty);
+    } else {
+      recent.forEach((entry) => {
+        const item = document.createElement('div');
+        item.className = 'friend-row';
+        const info = document.createElement('div');
+        info.className = 'friend-row__info';
+        const title = document.createElement('div');
+        title.className = 'friend-row__name';
+        title.textContent =
+          entry.type === 'gym'
+            ? entry.routineName
+            : `Running ${formatNumber(entry.session.distanceKm, 1)} km`;
+        const meta = document.createElement('div');
+        meta.className = 'friend-row__meta';
+        meta.textContent = entry.date ? formatDateTime(entry.date) : '-';
+        info.appendChild(title);
+        info.appendChild(meta);
+        item.appendChild(info);
+        friendsProfileRecent.appendChild(item);
+      });
+    }
+  }
 };
 
 const parseTimeToSeconds = (value) => {
@@ -1936,6 +2117,249 @@ const renderHistoryRunningList = async () => {
     });
     historyRunningList.appendChild(row);
   });
+};
+
+const renderFriendRequests = () => {
+  if (!friendRequestsList) return;
+  const requests = friendsCache.friendships.filter(
+    (row) => row.status === FRIEND_STATUS.PENDING && row.addressee_id === cloudUser?.id
+  );
+  friendRequestsList.innerHTML = '';
+  if (requests.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = 'Sin solicitudes pendientes.';
+    friendRequestsList.appendChild(empty);
+    return;
+  }
+  requests.forEach((row) => {
+    const friendId = getFriendshipFriendId(row);
+    const profile = friendsCache.profiles.get(friendId);
+    const item = document.createElement('div');
+    item.className = 'friend-row';
+    const info = document.createElement('div');
+    info.className = 'friend-row__info';
+    const name = document.createElement('div');
+    name.className = 'friend-row__name';
+    name.textContent = profile?.display_name || profile?.email || 'Usuario';
+    const meta = document.createElement('div');
+    meta.className = 'friend-row__meta';
+    meta.textContent = 'Solicitud recibida';
+    info.appendChild(name);
+    info.appendChild(meta);
+    const actions = document.createElement('div');
+    actions.className = 'friend-row__actions';
+    const accept = document.createElement('button');
+    accept.className = 'button button--primary';
+    accept.textContent = 'Aceptar';
+    accept.addEventListener('click', async () => {
+      await respondToFriendRequest(row.id, true);
+    });
+    const reject = document.createElement('button');
+    reject.className = 'button button--ghost';
+    reject.textContent = 'Rechazar';
+    reject.addEventListener('click', async () => {
+      await respondToFriendRequest(row.id, false);
+    });
+    actions.appendChild(accept);
+    actions.appendChild(reject);
+    item.appendChild(info);
+    item.appendChild(actions);
+    friendRequestsList.appendChild(item);
+  });
+};
+
+const renderFriendsList = () => {
+  if (!friendsList) return;
+  const friends = friendsCache.friendships.filter((row) => row.status === FRIEND_STATUS.ACCEPTED);
+  friendsList.innerHTML = '';
+  if (friends.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = 'Aun no tienes amigos.';
+    friendsList.appendChild(empty);
+    return;
+  }
+  friends.forEach((row) => {
+    const friendId = getFriendshipFriendId(row);
+    const profile = friendsCache.profiles.get(friendId);
+    const item = document.createElement('div');
+    item.className = 'friend-row';
+    const info = document.createElement('div');
+    info.className = 'friend-row__info';
+    const name = document.createElement('div');
+    name.className = 'friend-row__name';
+    name.textContent = profile?.display_name || profile?.email || 'Usuario';
+    const meta = document.createElement('div');
+    meta.className = 'friend-row__meta';
+    meta.textContent = 'Ver perfil';
+    info.appendChild(name);
+    info.appendChild(meta);
+    const actions = document.createElement('div');
+    actions.className = 'friend-row__actions';
+    const view = document.createElement('button');
+    view.className = 'button button--ghost';
+    view.textContent = 'Ver';
+    view.addEventListener('click', () => renderFriendProfile(friendId));
+    actions.appendChild(view);
+    item.appendChild(info);
+    item.appendChild(actions);
+    friendsList.appendChild(item);
+  });
+};
+
+const renderFriendsNotifications = () => {
+  if (!friendsNotificationsList) return;
+  friendsNotificationsList.innerHTML = '';
+  if (!friendsCache.notifications.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = 'Sin notificaciones.';
+    friendsNotificationsList.appendChild(empty);
+    return;
+  }
+  friendsCache.notifications.forEach((notification) => {
+    const row = document.createElement('div');
+    row.className = 'notification-row';
+    const text = document.createElement('div');
+    text.className = 'notification-row__text';
+    text.textContent = notification.message || 'Nueva notificacion';
+    const time = document.createElement('div');
+    time.className = 'notification-row__time';
+    time.textContent = notification.created_at ? formatDateTime(notification.created_at) : '';
+    row.appendChild(text);
+    row.appendChild(time);
+    friendsNotificationsList.appendChild(row);
+  });
+};
+
+const loadFriendsData = async () => {
+  if (!supabaseClient || !cloudUser) return;
+  const { data: friendships, error } = await supabaseClient
+    .from('friendships')
+    .select('id, requester_id, addressee_id, status, created_at, updated_at')
+    .or(`requester_id.eq.${cloudUser.id},addressee_id.eq.${cloudUser.id}`);
+  if (error) {
+    setCloudError(error.message);
+    return;
+  }
+  friendsCache.friendships = friendships || [];
+  const friendIds = friendsCache.friendships.map(getFriendshipFriendId);
+  const profiles = await fetchProfilesByIds(friendIds);
+  friendsCache.profiles = new Map(profiles.map((profile) => [profile.user_id, profile]));
+
+  const { data: notifications, error: notificationError } = await supabaseClient
+    .from('notifications')
+    .select('id, message, created_at, read_at')
+    .eq('user_id', cloudUser.id)
+    .order('created_at', { ascending: false })
+    .limit(10);
+  if (!notificationError) {
+    friendsCache.notifications = notifications || [];
+  }
+};
+
+const renderFriendsView = async () => {
+  if (!friendsList) return;
+  await loadFriendsData();
+  renderFriendRequests();
+  renderFriendsList();
+  renderFriendsNotifications();
+  if (state.currentFriendId) {
+    await renderFriendProfile(state.currentFriendId);
+  } else if (friendsProfile) {
+    friendsProfile.hidden = true;
+  }
+};
+
+const sendFriendRequest = async (email) => {
+  if (!supabaseClient || !cloudUser) {
+    throw new Error('No autenticado.');
+  }
+  const profile = await fetchProfileByEmail(email);
+  if (!profile?.user_id) {
+    throw new Error('Usuario no encontrado.');
+  }
+  if (profile.user_id === cloudUser.id) {
+    throw new Error('No puedes agregarte.');
+  }
+  const { data: existing } = await supabaseClient
+    .from('friendships')
+    .select('id, status, requester_id, addressee_id')
+    .or(
+      `and(requester_id.eq.${cloudUser.id},addressee_id.eq.${profile.user_id}),and(requester_id.eq.${profile.user_id},addressee_id.eq.${cloudUser.id})`
+    )
+    .maybeSingle();
+  if (existing) {
+    throw new Error('Ya existe una solicitud o amistad.');
+  }
+  const { error } = await supabaseClient.from('friendships').insert({
+    requester_id: cloudUser.id,
+    addressee_id: profile.user_id,
+    status: FRIEND_STATUS.PENDING,
+  });
+  if (error) throw error;
+  await supabaseClient.from('notifications').insert({
+    user_id: profile.user_id,
+    message: `Nueva solicitud de amistad`,
+  });
+};
+
+const respondToFriendRequest = async (friendshipId, accept) => {
+  if (!supabaseClient || !cloudUser) return;
+  const status = accept ? FRIEND_STATUS.ACCEPTED : FRIEND_STATUS.REJECTED;
+  const { data, error } = await supabaseClient
+    .from('friendships')
+    .update({ status })
+    .eq('id', friendshipId)
+    .select('requester_id, addressee_id')
+    .maybeSingle();
+  if (error) {
+    setCloudError(error.message);
+    return;
+  }
+  const targetId = data?.requester_id === cloudUser.id ? data?.addressee_id : data?.requester_id;
+  if (targetId) {
+    await supabaseClient.from('notifications').insert({
+      user_id: targetId,
+      message: accept ? 'Solicitud aceptada' : 'Solicitud rechazada',
+    });
+  }
+  await renderFriendsView();
+};
+
+const removeFriendship = async (friendId) => {
+  if (!supabaseClient || !cloudUser) return;
+  const { error } = await supabaseClient
+    .from('friendships')
+    .delete()
+    .or(
+      `and(requester_id.eq.${cloudUser.id},addressee_id.eq.${friendId}),and(requester_id.eq.${friendId},addressee_id.eq.${cloudUser.id})`
+    );
+  if (error) {
+    setCloudError(error.message);
+    return;
+  }
+  state.currentFriendId = null;
+  friendsProfile.hidden = true;
+  await renderFriendsView();
+};
+
+const blockFriendship = async (friendId) => {
+  if (!supabaseClient || !cloudUser) return;
+  const { error } = await supabaseClient
+    .from('friendships')
+    .update({ status: FRIEND_STATUS.BLOCKED })
+    .or(
+      `and(requester_id.eq.${cloudUser.id},addressee_id.eq.${friendId}),and(requester_id.eq.${friendId},addressee_id.eq.${cloudUser.id})`
+    );
+  if (error) {
+    setCloudError(error.message);
+    return;
+  }
+  state.currentFriendId = null;
+  friendsProfile.hidden = true;
+  await renderFriendsView();
 };
 
 const setHistoryMode = (mode) => {
@@ -3428,6 +3852,50 @@ if (recordsModeRun) {
   recordsModeRun.addEventListener('click', () => setRecordsMode('run'));
 }
 
+if (friendAdd) {
+  friendAdd.addEventListener('click', async () => {
+    if (friendError) friendError.textContent = '';
+    const email = friendEmail?.value.trim().toLowerCase();
+    if (!email) {
+      if (friendError) friendError.textContent = 'Introduce un email valido.';
+      return;
+    }
+    try {
+      await sendFriendRequest(email);
+      if (friendEmail) friendEmail.value = '';
+      await renderFriendsView();
+    } catch (error) {
+      if (friendError) friendError.textContent = error.message;
+    }
+  });
+}
+
+if (friendsRemove) {
+  friendsRemove.addEventListener('click', async () => {
+    if (!state.currentFriendId) return;
+    const ok = await confirmDialog('Eliminar este amigo?', {
+      title: 'Eliminar amigo',
+      confirmText: 'Eliminar',
+      danger: true,
+    });
+    if (!ok) return;
+    await removeFriendship(state.currentFriendId);
+  });
+}
+
+if (friendsBlock) {
+  friendsBlock.addEventListener('click', async () => {
+    if (!state.currentFriendId) return;
+    const ok = await confirmDialog('Bloquear este amigo?', {
+      title: 'Bloquear amigo',
+      confirmText: 'Bloquear',
+      danger: true,
+    });
+    if (!ok) return;
+    await blockFriendship(state.currentFriendId);
+  });
+}
+
 if (historyModeGym) {
   historyModeGym.addEventListener('click', () => setHistoryMode('gym'));
 }
@@ -3768,6 +4236,26 @@ const profileRepository = {
   },
 };
 
+const syncProfilePublic = async () => {
+  if (!supabaseClient || !cloudUser) return;
+  const profile = await profileRepository.getProfile();
+  if (!profile) return;
+  const payload = {
+    user_id: cloudUser.id,
+    email: cloudUser.email || '',
+    display_name: profile.name || '',
+    bio: profile.notes || '',
+    avatar_url: profile.avatar || '',
+    updated_at: new Date().toISOString(),
+  };
+  const { error } = await supabaseClient.from('profiles').upsert(payload, {
+    onConflict: 'user_id',
+  });
+  if (error) {
+    setCloudError(error.message);
+  }
+};
+
 const setRecoveryError = (message) => {
   if (recoveryError) {
     recoveryError.textContent = message || '';
@@ -4053,6 +4541,7 @@ const updateCloudUI = (user) => {
     if (cloudSessionPanel) cloudSessionPanel.hidden = false;
     if (cloudAuthForm) cloudAuthForm.hidden = true;
     renderProfile();
+    syncProfilePublic();
     startCloudPolling();
     startCloudRealtime();
     const route = location.hash.replace('#', '') || 'home';
@@ -4063,6 +4552,8 @@ const updateCloudUI = (user) => {
     stopCloudPolling();
     stopCloudRealtime();
     clearLocalUserData();
+    friendsCache = { friendships: [], profiles: new Map(), notifications: [] };
+    state.currentFriendId = null;
     if (profileMenu) {
       profileMenu.hidden = true;
     }
@@ -4477,6 +4968,9 @@ navButtons.forEach((button) => {
     if (route === 'records') {
       renderRecords();
     }
+    if (route === 'friends') {
+      renderFriendsView();
+    }
     if (profileMenu) {
       profileMenu.classList.remove('is-open');
     }
@@ -4544,6 +5038,7 @@ if (saveProfile) {
         saveProfile.classList.add('is-saving');
       }
       await renderProfile();
+      await syncProfilePublic();
       await renderHomeDashboard();
       setTimeout(() => {
         if (saveProfile) {

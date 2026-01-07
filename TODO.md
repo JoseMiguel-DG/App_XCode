@@ -3,4 +3,5 @@
 - Arreglar Olvidó su contraseña
 - Sistema de amistades
 - Grupos de amistades
-- Añadir records de running
+- Establecer una rutina semanal (pudiendo seleccionar la rutina de cada dia de la semana)
+- Galeria para subir fotos del progreso
