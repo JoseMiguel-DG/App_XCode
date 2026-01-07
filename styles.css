@@ -966,25 +966,17 @@ body {
 
 @media (max-width: 520px) {
   .set-row {
-    grid-template-columns: 36px minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-areas:
-      "label weight weight"
-      "label reps rir";
+    grid-template-columns: 32px repeat(3, minmax(0, 1fr));
+    grid-template-areas: none;
+    gap: 6px;
   }
 
   .set-row__label {
-    grid-area: label;
+    font-size: 0.75rem;
   }
 
-  .set-row .set-input:nth-of-type(1) {
-    grid-area: weight;
-  }
-
-  .set-row .set-input:nth-of-type(2) {
-    grid-area: reps;
-  }
-
-  .set-row .set-input:nth-of-type(3) {
-    grid-area: rir;
+  .set-input {
+    padding: 7px 8px;
+    font-size: 0.8rem;
   }
 }
