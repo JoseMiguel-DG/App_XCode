@@ -735,6 +735,44 @@ body {
   gap: 12px;
 }
 
+.auth-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+  padding: 6px;
+  border-radius: 999px;
+  background: rgba(17, 24, 39, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.auth-tab {
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  padding: 8px 12px;
+  border-radius: 999px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.auth-tab.is-active {
+  background: linear-gradient(90deg, #a855f7, #7c3aed);
+  color: #0b0f1a;
+}
+
+.auth-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+[data-theme="light"] .auth-tabs {
+  background: rgba(15, 23, 42, 0.08);
+  border-color: rgba(15, 23, 42, 0.12);
+}
+
 .form__field {
   display: flex;
   flex-direction: column;

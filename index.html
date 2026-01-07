@@ -123,39 +123,109 @@
           <div class="panel__header">
             <div>
               <h2>Iniciar sesion</h2>
-              <p class="panel__subtitle">Accede para usar tu biblioteca en la nube.</p>
+              <p class="panel__subtitle">Accede o crea tu cuenta para sincronizar tu progreso.</p>
             </div>
           </div>
           <div class="card">
             <div class="form__grid" id="cloudAuthForm">
-              <div class="form__field">
-                <label class="form__label" for="cloudEmail">Email</label>
-                <input
-                  class="form__input"
-                  id="cloudEmail"
-                  type="email"
-                  autocomplete="email"
-                  placeholder="tu@email.com"
-                />
+              <div class="auth-tabs" role="tablist" aria-label="Acceso">
+                <button
+                  class="auth-tab is-active"
+                  type="button"
+                  data-auth-tab="login"
+                  aria-controls="authLoginPanel"
+                  aria-selected="true"
+                >
+                  Entrar
+                </button>
+                <button
+                  class="auth-tab"
+                  type="button"
+                  data-auth-tab="signup"
+                  aria-controls="authSignupPanel"
+                  aria-selected="false"
+                >
+                  Crear cuenta
+                </button>
               </div>
-              <div class="form__field">
-                <label class="form__label" for="cloudPassword">Contrasena</label>
-                <input
-                  class="form__input"
-                  id="cloudPassword"
-                  type="password"
-                  autocomplete="current-password"
-                  placeholder="********"
-                />
+
+              <div class="auth-panel" id="authLoginPanel">
+                <div class="form__field">
+                  <label class="form__label" for="cloudEmail">Email</label>
+                  <input
+                    class="form__input"
+                    id="cloudEmail"
+                    type="email"
+                    autocomplete="email"
+                    placeholder="tu@email.com"
+                  />
+                </div>
+                <div class="form__field">
+                  <label class="form__label" for="cloudPassword">Contrasena</label>
+                  <input
+                    class="form__input"
+                    id="cloudPassword"
+                    type="password"
+                    autocomplete="current-password"
+                    placeholder="********"
+                  />
+                </div>
+                <p class="form__error" id="cloudError"></p>
+                <div class="form__actions">
+                  <button class="button button--primary" id="cloudLogin">Entrar</button>
+                </div>
               </div>
-              <p class="form__error" id="cloudError"></p>
+
+              <div class="auth-panel" id="authSignupPanel" hidden>
+                <div class="form__field">
+                  <label class="form__label" for="signupName">Nombre</label>
+                  <input
+                    class="form__input"
+                    id="signupName"
+                    type="text"
+                    autocomplete="name"
+                    placeholder="Tu nombre"
+                  />
+                </div>
+                <div class="form__field">
+                  <label class="form__label" for="signupEmail">Email</label>
+                  <input
+                    class="form__input"
+                    id="signupEmail"
+                    type="email"
+                    autocomplete="email"
+                    placeholder="tu@email.com"
+                  />
+                </div>
+                <div class="form__field">
+                  <label class="form__label" for="signupPassword">Contrasena</label>
+                  <input
+                    class="form__input"
+                    id="signupPassword"
+                    type="password"
+                    autocomplete="new-password"
+                    placeholder="Minimo 6 caracteres"
+                  />
+                </div>
+                <div class="form__field">
+                  <label class="form__label" for="signupPasswordConfirm">Repite la contrasena</label>
+                  <input
+                    class="form__input"
+                    id="signupPasswordConfirm"
+                    type="password"
+                    autocomplete="new-password"
+                    placeholder="********"
+                  />
+                </div>
+                <p class="form__error" id="cloudSignupError"></p>
+                <div class="form__actions">
+                  <button class="button button--primary" id="cloudSignup">Crear cuenta</button>
+                </div>
+              </div>
+
               <div class="status-row">
                 <span class="status-dot" id="cloudStatusDotUnauthed"></span>
                 <p class="card__text" id="cloudStatusUnauthed">No autenticado.</p>
-              </div>
-              <div class="form__actions">
-                <button class="button button--primary" id="cloudLogin">Entrar</button>
-                <button class="button button--ghost" id="cloudSignup">Crear cuenta</button>
               </div>
             </div>
           </div>

@@ -1,5 +1,3 @@
-- Logo + branding
-- logo pestaña
 - Perfil
 - Ventana de PR
 - Running

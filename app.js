@@ -88,6 +88,11 @@ const forceRefresh = document.getElementById('forceRefresh');
 const cloudEmail = document.getElementById('cloudEmail');
 const cloudPassword = document.getElementById('cloudPassword');
 const cloudError = document.getElementById('cloudError');
+const cloudSignupError = document.getElementById('cloudSignupError');
+const signupName = document.getElementById('signupName');
+const signupEmail = document.getElementById('signupEmail');
+const signupPassword = document.getElementById('signupPassword');
+const signupPasswordConfirm = document.getElementById('signupPasswordConfirm');
 const cloudStatus = document.getElementById('cloudStatus');
 const cloudStatusDot = document.getElementById('cloudStatusDot');
 const cloudStatusUnauthed = document.getElementById('cloudStatusUnauthed');
@@ -126,6 +131,9 @@ const homeSparkline = document.getElementById('homeSparkline');
 const homeNextSessionCard = document.getElementById('homeNextSessionCard');
 const homeNextSessionTitle = document.getElementById('homeNextSessionTitle');
 const homeNextSessionList = document.getElementById('homeNextSessionList');
+const authTabs = document.querySelectorAll('[data-auth-tab]');
+const authLoginPanel = document.getElementById('authLoginPanel');
+const authSignupPanel = document.getElementById('authSignupPanel');
 
 const STORAGE_DB = 'exercise-library-db';
 const THEME_KEY = 'personal-pwa-theme';
@@ -2943,6 +2951,24 @@ const setCloudError = (message) => {
   }
 };
 
+const setSignupError = (message) => {
+  if (cloudSignupError) {
+    cloudSignupError.textContent = message || '';
+  }
+};
+
+const setAuthTab = (tab) => {
+  if (!authLoginPanel || !authSignupPanel || !authTabs.length) return;
+  const isLogin = tab === 'login';
+  authLoginPanel.hidden = !isLogin;
+  authSignupPanel.hidden = isLogin;
+  authTabs.forEach((button) => {
+    const isActive = button.dataset.authTab === tab;
+    button.classList.toggle('is-active', isActive);
+    button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+  });
+};
+
 const setCloudStatus = (message, tone = 'idle') => {
   const targets = [
     { text: cloudStatus, dot: cloudStatusDot },
@@ -3016,6 +3042,7 @@ const updateCloudUI = (user) => {
     if (cloudSessionPanel) cloudSessionPanel.hidden = true;
     if (cloudAuthForm) cloudAuthForm.hidden = false;
     setCloudLastSync('');
+    setAuthTab('login');
     setView('auth');
   }
 };
@@ -3121,10 +3148,22 @@ importFile.addEventListener('change', async (event) => {
   alert('Datos importados.');
 });
 
+if (authTabs.length) {
+  authTabs.forEach((button) => {
+    button.addEventListener('click', () => {
+      const tab = button.dataset.authTab;
+      setAuthTab(tab);
+      setCloudError('');
+      setSignupError('');
+    });
+  });
+}
+
 if (cloudLogin) {
   cloudLogin.addEventListener('click', async (event) => {
     event.preventDefault();
     setCloudError('');
+    setSignupError('');
     if (!supabaseClient) {
       setCloudError('Supabase no disponible.');
       return;
@@ -3146,22 +3185,41 @@ if (cloudSignup) {
   cloudSignup.addEventListener('click', async (event) => {
     event.preventDefault();
     setCloudError('');
+    setSignupError('');
     if (!supabaseClient) {
-      setCloudError('Supabase no disponible.');
+      setSignupError('Supabase no disponible.');
       return;
     }
-    const email = cloudEmail.value.trim();
-    const password = cloudPassword.value;
+    const email = signupEmail ? signupEmail.value.trim() : '';
+    const password = signupPassword ? signupPassword.value : '';
+    const confirm = signupPasswordConfirm ? signupPasswordConfirm.value : '';
+    const fullName = signupName ? signupName.value.trim() : '';
     if (!email || !password) {
-      setCloudError('Completa email y contrasena.');
+      setSignupError('Completa email y contrasena.');
       return;
     }
-    const { error } = await supabaseClient.auth.signUp({ email, password });
+    if (password.length < 6) {
+      setSignupError('La contrasena debe tener al menos 6 caracteres.');
+      return;
+    }
+    if (password !== confirm) {
+      setSignupError('Las contrasenas no coinciden.');
+      return;
+    }
+    const { error } = await supabaseClient.auth.signUp({
+      email,
+      password,
+      options: fullName ? { data: { full_name: fullName } } : undefined,
+    });
     if (error) {
-      setCloudError(error.message);
+      setSignupError(error.message);
       return;
     }
     setCloudStatus('Cuenta creada. Revisa tu correo si pide confirmacion.', 'ok');
+    setAuthTab('login');
+    if (cloudEmail) {
+      cloudEmail.value = email;
+    }
   });
 }
 
