@@ -75,7 +75,7 @@
       media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)"
     />
 
-    <link rel="stylesheet" href="styles.css?v=0.10.9" />
+    <link rel="stylesheet" href="styles.css?v=0.11.0" />
   </head>
   <body>
     <div class="app">
@@ -477,17 +477,24 @@
                 </div>
                 <div class="form__field">
                   <label class="form__label" for="runningDuration">Tiempo</label>
-                  <input
-                    class="form__input"
-                    id="runningDuration"
-                    type="text"
-                    inputmode="numeric"
-                    placeholder="mm:ss o hh:mm:ss"
-                  />
+                  <div class="duration-picker" id="runningDuration">
+                    <select class="form__input duration-picker__select" id="runningDurationHours"></select>
+                    <span class="duration-picker__label">h</span>
+                    <select class="form__input duration-picker__select" id="runningDurationMinutes"></select>
+                    <span class="duration-picker__label">m</span>
+                    <select class="form__input duration-picker__select" id="runningDurationSeconds"></select>
+                    <span class="duration-picker__label">s</span>
+                  </div>
                 </div>
                 <div class="form__field">
                   <label class="form__label" for="runningDistance">Distancia (km)</label>
-                  <input class="form__input" id="runningDistance" type="number" step="0.01" />
+                  <input
+                    class="form__input"
+                    id="runningDistance"
+                    type="number"
+                    step="0.01"
+                    inputmode="decimal"
+                  />
                 </div>
                 <div class="form__field">
                   <label class="form__label" for="runningPace">Ritmo</label>
@@ -1213,6 +1220,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=0.10.9"></script>
+    <script src="app.js?v=0.11.0"></script>
   </body>
 </html>

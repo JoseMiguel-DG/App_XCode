@@ -1107,6 +1107,24 @@ body {
   min-height: 90px;
 }
 
+.duration-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.duration-picker__select {
+  width: 80px;
+  text-align: center;
+}
+
+.duration-picker__label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
 .records-hero {
   background: linear-gradient(145deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.9));
   border: 1px solid rgba(148, 163, 184, 0.22);

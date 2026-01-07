@@ -46,7 +46,9 @@ const trainModeRun = document.getElementById('trainModeRun');
 const trainGymPanel = document.getElementById('trainGymPanel');
 const trainRunPanel = document.getElementById('trainRunPanel');
 const runningDate = document.getElementById('runningDate');
-const runningDuration = document.getElementById('runningDuration');
+const runningDurationHours = document.getElementById('runningDurationHours');
+const runningDurationMinutes = document.getElementById('runningDurationMinutes');
+const runningDurationSeconds = document.getElementById('runningDurationSeconds');
 const runningDistance = document.getElementById('runningDistance');
 const runningPace = document.getElementById('runningPace');
 const runningNotes = document.getElementById('runningNotes');
@@ -228,7 +230,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.10.9';
+const APP_VERSION = '0.11.0';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 
 const state = {
@@ -1542,6 +1544,35 @@ const parsePaceToSeconds = (value) => {
   return parts[0] * 60 + parts[1];
 };
 
+const getRunningDurationSeconds = () => {
+  const hours = Number(runningDurationHours?.value || 0);
+  const minutes = Number(runningDurationMinutes?.value || 0);
+  const seconds = Number(runningDurationSeconds?.value || 0);
+  if ([hours, minutes, seconds].some((value) => Number.isNaN(value))) return null;
+  const total = hours * 3600 + minutes * 60 + seconds;
+  return total > 0 ? total : null;
+};
+
+const fillDurationSelect = (select, max, pad = 2) => {
+  if (!select) return;
+  select.innerHTML = '';
+  for (let i = 0; i <= max; i += 1) {
+    const option = document.createElement('option');
+    option.value = String(i);
+    option.textContent = String(i).padStart(pad, '0');
+    select.appendChild(option);
+  }
+};
+
+const initRunningDurationPicker = () => {
+  fillDurationSelect(runningDurationHours, 9);
+  fillDurationSelect(runningDurationMinutes, 59);
+  fillDurationSelect(runningDurationSeconds, 59);
+  if (runningDurationHours) runningDurationHours.value = '0';
+  if (runningDurationMinutes) runningDurationMinutes.value = '0';
+  if (runningDurationSeconds) runningDurationSeconds.value = '0';
+};
+
 const getTodayInputDate = () => new Date().toISOString().slice(0, 10);
 
 const confirmDialog = (message, options = {}) => {
@@ -1931,7 +1962,7 @@ const updateRunningPacePreview = () => {
   if (!runningPace) return;
   if (state.runningPaceManual && runningPace.value) return;
   const distance = parseNumber(runningDistance?.value || '');
-  const durationSeconds = parseTimeToSeconds(runningDuration?.value || '');
+  const durationSeconds = getRunningDurationSeconds();
   if (!distance || !durationSeconds) {
     runningPace.value = '';
     return;
@@ -1994,6 +2025,9 @@ const renderRunning = async () => {
   if (!runningList) return;
   if (runningDate && !runningDate.value) {
     runningDate.value = getTodayInputDate();
+  }
+  if (runningDurationHours && runningDurationHours.options.length === 0) {
+    initRunningDurationPicker();
   }
   const sessions = await runningRepository.listAllSessions();
   const sorted = sessions
@@ -3410,8 +3444,16 @@ if (runningDistance) {
   runningDistance.addEventListener('input', updateRunningPacePreview);
 }
 
-if (runningDuration) {
-  runningDuration.addEventListener('input', updateRunningPacePreview);
+if (runningDurationHours) {
+  runningDurationHours.addEventListener('change', updateRunningPacePreview);
+}
+
+if (runningDurationMinutes) {
+  runningDurationMinutes.addEventListener('change', updateRunningPacePreview);
+}
+
+if (runningDurationSeconds) {
+  runningDurationSeconds.addEventListener('change', updateRunningPacePreview);
 }
 
 if (runningPace) {
@@ -3425,7 +3467,7 @@ if (runningSave) {
   runningSave.addEventListener('click', async () => {
     if (runningError) runningError.textContent = '';
     const distance = parseNumber(runningDistance?.value || '');
-    const durationSeconds = parseTimeToSeconds(runningDuration?.value || '');
+    const durationSeconds = getRunningDurationSeconds();
     if (!distance || distance <= 0) {
       if (runningError) runningError.textContent = 'Introduce una distancia valida.';
       return;
@@ -3454,7 +3496,9 @@ if (runningSave) {
       paceSeconds,
       notes: runningNotes?.value.trim() || '',
     });
-    if (runningDuration) runningDuration.value = '';
+    if (runningDurationHours) runningDurationHours.value = '0';
+    if (runningDurationMinutes) runningDurationMinutes.value = '0';
+    if (runningDurationSeconds) runningDurationSeconds.value = '0';
     if (runningDistance) runningDistance.value = '';
     if (runningPace) runningPace.value = '';
     if (runningNotes) runningNotes.value = '';
