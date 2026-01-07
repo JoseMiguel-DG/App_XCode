@@ -244,7 +244,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.11.4';
+const APP_VERSION = '0.11.5';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 const FRIEND_STATUS = {
   PENDING: 'pending',
@@ -2140,6 +2140,11 @@ const renderFriendRequests = () => {
     const profile = friendsCache.profiles.get(friendId);
     const item = document.createElement('div');
     item.className = 'friend-row';
+    const avatar = document.createElement('div');
+    avatar.className = 'friend-row__avatar';
+    if (profile?.avatar_url) {
+      avatar.style.backgroundImage = `url('${profile.avatar_url}')`;
+    }
     const info = document.createElement('div');
     info.className = 'friend-row__info';
     const name = document.createElement('div');
@@ -2148,6 +2153,9 @@ const renderFriendRequests = () => {
     const meta = document.createElement('div');
     meta.className = 'friend-row__meta';
     meta.textContent = 'Solicitud recibida';
+    const badge = document.createElement('span');
+    badge.className = 'friend-row__badge';
+    badge.textContent = 'Pendiente';
     info.appendChild(name);
     info.appendChild(meta);
     const actions = document.createElement('div');
@@ -2166,7 +2174,9 @@ const renderFriendRequests = () => {
     });
     actions.appendChild(accept);
     actions.appendChild(reject);
+    item.appendChild(avatar);
     item.appendChild(info);
+    item.appendChild(badge);
     item.appendChild(actions);
     friendRequestsList.appendChild(item);
   });
@@ -2188,6 +2198,11 @@ const renderFriendsList = () => {
     const profile = friendsCache.profiles.get(friendId);
     const item = document.createElement('div');
     item.className = 'friend-row';
+    const avatar = document.createElement('div');
+    avatar.className = 'friend-row__avatar';
+    if (profile?.avatar_url) {
+      avatar.style.backgroundImage = `url('${profile.avatar_url}')`;
+    }
     const info = document.createElement('div');
     info.className = 'friend-row__info';
     const name = document.createElement('div');
@@ -2205,6 +2220,7 @@ const renderFriendsList = () => {
     view.textContent = 'Ver';
     view.addEventListener('click', () => renderFriendProfile(friendId));
     actions.appendChild(view);
+    item.appendChild(avatar);
     item.appendChild(info);
     item.appendChild(actions);
     friendsList.appendChild(item);
@@ -2224,12 +2240,15 @@ const renderFriendsNotifications = () => {
   friendsCache.notifications.forEach((notification) => {
     const row = document.createElement('div');
     row.className = 'notification-row';
+    const dot = document.createElement('span');
+    dot.className = 'notification-row__dot';
     const text = document.createElement('div');
     text.className = 'notification-row__text';
     text.textContent = notification.message || 'Nueva notificacion';
     const time = document.createElement('div');
     time.className = 'notification-row__time';
     time.textContent = notification.created_at ? formatDateTime(notification.created_at) : '';
+    row.appendChild(dot);
     row.appendChild(text);
     row.appendChild(time);
     friendsNotificationsList.appendChild(row);

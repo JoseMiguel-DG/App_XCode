@@ -1216,6 +1216,8 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.92), rgba(30, 41, 59, 0.8));
 }
 
 .friends-profile__header {
@@ -1232,6 +1234,7 @@ body {
   background-size: cover;
   background-position: center;
   border: 1px solid rgba(148, 163, 184, 0.25);
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.45);
 }
 
 .friends-profile__name {
@@ -1291,6 +1294,17 @@ body {
   border: 1px solid rgba(148, 163, 184, 0.15);
 }
 
+.friend-row__avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: rgba(148, 163, 184, 0.2);
+  background-size: cover;
+  background-position: center;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  flex-shrink: 0;
+}
+
 .friend-row__info {
   display: flex;
   flex-direction: column;
@@ -1311,6 +1325,16 @@ body {
   gap: 8px;
 }
 
+.friend-row__badge {
+  font-size: 0.7rem;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.16);
+  color: #bae6fd;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .notification-row {
   display: flex;
   justify-content: space-between;
@@ -1319,6 +1343,15 @@ body {
   border-radius: 14px;
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(148, 163, 184, 0.15);
+  align-items: center;
+}
+
+.notification-row__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.9);
+  box-shadow: 0 0 0 6px rgba(56, 189, 248, 0.15);
 }
 
 .notification-row__text {
