@@ -72,7 +72,7 @@
       media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)"
     />
 
-    <link rel="stylesheet" href="styles.css?v=0.9.1" />
+    <link rel="stylesheet" href="styles.css?v=0.9.2" />
   </head>
   <body>
     <div class="app">
@@ -161,6 +161,7 @@
         <button class="nav__button" data-route="train">Entrenar</button>
         <button class="nav__button" data-route="routines">Rutinas</button>
         <button class="nav__button" data-route="history">Historial</button>
+        <button class="nav__button" data-route="records">Records</button>
         <button class="nav__button" data-route="exercises">Biblioteca</button>
       </nav>
 
@@ -447,6 +448,72 @@
           </div>
 
           <ul class="list" id="historyList"></ul>
+        </section>
+
+        <section class="panel" data-view="records" hidden>
+          <div class="panel__header">
+            <div>
+              <h2>Records</h2>
+              <p class="panel__subtitle">Vista tecnica de PRs por ejercicio y fuerza estimada.</p>
+            </div>
+          </div>
+
+          <div class="card records-hero">
+            <div>
+              <p class="hero-card__eyebrow">Analisis de fuerza</p>
+              <h3 class="hero-card__title">Todos tus PRs en un panel de control profesional.</h3>
+              <p class="card__text">
+                Consulta tu mejor marca, e1RM y sesiones registradas por ejercicio.
+              </p>
+            </div>
+          </div>
+
+          <div class="records-grid">
+            <div class="card records-metric">
+              <p class="records-metric__label">PRs totales</p>
+              <p class="records-metric__value" id="recordsTotalValue">-</p>
+              <p class="records-metric__meta" id="recordsTotalMeta">Ejercicios con PR</p>
+            </div>
+            <div class="card records-metric">
+              <p class="records-metric__label">Mejor e1RM</p>
+              <p class="records-metric__value" id="recordsBestValue">-</p>
+              <p class="records-metric__meta" id="recordsBestMeta">Sin datos</p>
+            </div>
+            <div class="card records-metric">
+              <p class="records-metric__label">Ultimo PR</p>
+              <p class="records-metric__value" id="recordsLastValue">-</p>
+              <p class="records-metric__meta" id="recordsLastMeta">Sin datos</p>
+            </div>
+          </div>
+
+          <div class="card records-controls">
+            <div class="records-controls__row">
+              <div class="form__field">
+                <label class="form__label" for="recordsSearch">Buscar ejercicio</label>
+                <input
+                  class="form__input"
+                  id="recordsSearch"
+                  type="search"
+                  placeholder="Press banca, sentadilla..."
+                />
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="recordsCategoryFilter">Categoria</label>
+                <select class="form__input" id="recordsCategoryFilter"></select>
+              </div>
+            </div>
+          </div>
+
+          <div class="card records-table">
+            <div class="records-table__head">
+              <span>Ejercicio</span>
+              <span>PR</span>
+              <span>e1RM</span>
+              <span>Fecha</span>
+              <span>Sesiones</span>
+            </div>
+            <div class="records-table__body" id="recordsList"></div>
+          </div>
         </section>
 
         <section class="panel" data-view="profile" hidden>
@@ -976,6 +1043,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=0.9.1"></script>
+    <script src="app.js?v=0.9.2"></script>
   </body>
 </html>

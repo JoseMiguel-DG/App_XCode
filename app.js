@@ -80,6 +80,15 @@ const historyDelete = document.getElementById('historyDelete');
 const historyDetailTitle = document.getElementById('historyDetailTitle');
 const historyDetailMeta = document.getElementById('historyDetailMeta');
 const historyDetailList = document.getElementById('historyDetailList');
+const recordsSearch = document.getElementById('recordsSearch');
+const recordsCategoryFilter = document.getElementById('recordsCategoryFilter');
+const recordsList = document.getElementById('recordsList');
+const recordsTotalValue = document.getElementById('recordsTotalValue');
+const recordsTotalMeta = document.getElementById('recordsTotalMeta');
+const recordsBestValue = document.getElementById('recordsBestValue');
+const recordsBestMeta = document.getElementById('recordsBestMeta');
+const recordsLastValue = document.getElementById('recordsLastValue');
+const recordsLastMeta = document.getElementById('recordsLastMeta');
 const profileMenu = document.getElementById('profileMenu');
 const profileButton = document.getElementById('profileButton');
 const settingsButton = document.getElementById('settingsButton');
@@ -185,7 +194,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.9.1';
+const APP_VERSION = '0.9.2';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 
 const state = {
@@ -198,6 +207,8 @@ const state = {
   activeSessionId: null,
   expandedRoutineItemId: null,
   currentHistorySessionId: null,
+  recordsSearch: '',
+  recordsCategoryFilter: 'all',
 };
 
 const createId = () =>
@@ -1316,6 +1327,9 @@ const setView = (route) => {
   if (route === 'history') {
     renderHistoryList();
   }
+  if (route === 'records') {
+    renderRecords();
+  }
   if (route === 'routines') {
     routineEditor.hidden = true;
     state.expandedRoutineItemId = null;
@@ -1685,6 +1699,245 @@ const renderHistoryList = async () => {
       item.appendChild(row);
       historyList.appendChild(item);
     });
+};
+
+const calculateE1rm = (weight, reps) => weight * (1 + reps / 30);
+
+const buildRecordsDataset = async () => {
+  const [exercises, categories, sessions, logs] = await Promise.all([
+    exerciseRepository.listAllExercises(),
+    exerciseRepository.listCategories(),
+    trainingRepository.listAllSessions(),
+    getAllFromStore('sessionExerciseLogs'),
+  ]);
+  if (!logs || logs.length === 0) return [];
+
+  const exerciseMap = new Map(exercises.map((exercise) => [exercise.id, exercise]));
+  const categoryMap = new Map(categories.map((category) => [category.id, category.name]));
+  const sessionMap = new Map(sessions.map((session) => [session.id, session]));
+  const recordsByExercise = new Map();
+
+  logs.forEach((log) => {
+    const exercise = exerciseMap.get(log.exerciseId);
+    if (!exercise) return;
+    const session = sessionMap.get(log.sessionId);
+    const recordDate = session?.finishedAt || session?.startedAt || log.createdAt || null;
+    let record = recordsByExercise.get(exercise.id);
+    if (!record) {
+      record = {
+        exercise,
+        categoryName: categoryMap.get(exercise.categoryId) || 'Sin categoria',
+        maxWeight: null,
+        maxWeightSet: null,
+        maxWeightDate: null,
+        maxE1rm: null,
+        maxE1rmSet: null,
+        maxE1rmDate: null,
+        sessionIds: new Set(),
+        totalSets: 0,
+        lastDate: null,
+      };
+      recordsByExercise.set(exercise.id, record);
+    }
+
+    (log.sets || []).forEach((set) => {
+      const weight = typeof set.weight === 'number' ? set.weight : null;
+      const reps = typeof set.reps === 'number' ? set.reps : null;
+      if (weight == null) return;
+      if (record.maxWeight == null || weight > record.maxWeight) {
+        record.maxWeight = weight;
+        record.maxWeightSet = { weight, reps, rir: set.rir ?? null };
+        record.maxWeightDate = recordDate;
+      }
+      if (reps != null && reps > 0) {
+        const e1rm = calculateE1rm(weight, reps);
+        if (record.maxE1rm == null || e1rm > record.maxE1rm) {
+          record.maxE1rm = e1rm;
+          record.maxE1rmSet = { weight, reps, rir: set.rir ?? null };
+          record.maxE1rmDate = recordDate;
+        }
+        record.totalSets += 1;
+      }
+    });
+
+    record.sessionIds.add(log.sessionId);
+    if (recordDate) {
+      if (!record.lastDate || new Date(recordDate) > new Date(record.lastDate)) {
+        record.lastDate = recordDate;
+      }
+    }
+  });
+
+  return Array.from(recordsByExercise.values()).map((record) => ({
+    ...record,
+    sessionCount: record.sessionIds.size,
+    prDate: record.maxWeightDate || record.maxE1rmDate,
+  }));
+};
+
+const fillRecordsCategoryFilter = async (selectedId) => {
+  if (!recordsCategoryFilter) return;
+  const categories = await exerciseRepository.listCategories();
+  recordsCategoryFilter.innerHTML = '';
+  const allOption = document.createElement('option');
+  allOption.value = 'all';
+  allOption.textContent = 'Todas las categorias';
+  recordsCategoryFilter.appendChild(allOption);
+  categories.forEach((category) => {
+    const option = document.createElement('option');
+    option.value = category.id;
+    option.textContent = category.name;
+    if (category.id === selectedId) {
+      option.selected = true;
+    }
+    recordsCategoryFilter.appendChild(option);
+  });
+  recordsCategoryFilter.value = selectedId || 'all';
+};
+
+const renderRecords = async () => {
+  if (!recordsList) return;
+  if (recordsCategoryFilter && recordsCategoryFilter.options.length === 0) {
+    await fillRecordsCategoryFilter(state.recordsCategoryFilter);
+  }
+  if (recordsSearch && recordsSearch.value !== state.recordsSearch) {
+    recordsSearch.value = state.recordsSearch;
+  }
+
+  const allRecords = await buildRecordsDataset();
+  const totalRecords = allRecords.length;
+  const bestRecord = allRecords.reduce((best, record) => {
+    const bestValue = best ? (best.maxE1rm ?? best.maxWeight ?? 0) : 0;
+    const currentValue = record.maxE1rm ?? record.maxWeight ?? 0;
+    return currentValue > bestValue ? record : best;
+  }, null);
+  const latestRecord = allRecords.reduce((latest, record) => {
+    if (!record.prDate) return latest;
+    if (!latest?.prDate) return record;
+    return new Date(record.prDate) > new Date(latest.prDate) ? record : latest;
+  }, null);
+
+  if (recordsTotalValue) recordsTotalValue.textContent = totalRecords ? `${totalRecords}` : '0';
+  if (recordsTotalMeta) {
+    recordsTotalMeta.textContent = totalRecords ? 'Ejercicios con PR' : 'Sin PRs registrados';
+  }
+  if (recordsBestValue) {
+    recordsBestValue.textContent = bestRecord
+      ? `${formatNumber(bestRecord.maxE1rm ?? bestRecord.maxWeight)} kg`
+      : '-';
+  }
+  if (recordsBestMeta) {
+    recordsBestMeta.textContent = bestRecord
+      ? `Mejor marca · ${bestRecord.exercise.name}`
+      : 'Sin datos';
+  }
+  if (recordsLastValue) {
+    recordsLastValue.textContent = latestRecord?.prDate ? formatDate(latestRecord.prDate) : '-';
+  }
+  if (recordsLastMeta) {
+    recordsLastMeta.textContent = latestRecord
+      ? `${latestRecord.exercise.name} · ${formatNumber(latestRecord.maxWeight ?? 0)} kg`
+      : 'Sin datos';
+  }
+
+  const searchValue = state.recordsSearch.trim().toLowerCase();
+  const categoryFilter = state.recordsCategoryFilter || 'all';
+  const filtered = allRecords
+    .filter((record) => {
+      if (categoryFilter !== 'all' && record.exercise.categoryId !== categoryFilter) {
+        return false;
+      }
+      if (!searchValue) return true;
+      const exerciseName = record.exercise.name.toLowerCase();
+      const categoryName = record.categoryName.toLowerCase();
+      return exerciseName.includes(searchValue) || categoryName.includes(searchValue);
+    })
+    .sort((a, b) => {
+      const aValue = a.maxE1rm ?? a.maxWeight ?? 0;
+      const bValue = b.maxE1rm ?? b.maxWeight ?? 0;
+      return bValue - aValue;
+    });
+
+  recordsList.innerHTML = '';
+  if (filtered.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = 'Aun no hay PRs registrados.';
+    recordsList.appendChild(empty);
+    return;
+  }
+
+  filtered.forEach((record) => {
+    const row = document.createElement('div');
+    row.className = 'records-row';
+
+    const exerciseCell = document.createElement('div');
+    const title = document.createElement('div');
+    title.className = 'records-title';
+    title.textContent = record.exercise.name;
+    const meta = document.createElement('div');
+    meta.className = 'records-meta';
+    const tag = document.createElement('span');
+    tag.className = 'records-tag';
+    tag.textContent = record.categoryName;
+    const last = document.createElement('span');
+    last.className = 'records-sub';
+    last.textContent = record.lastDate ? `Ultima: ${formatDate(record.lastDate)}` : 'Sin sesiones';
+    meta.appendChild(tag);
+    meta.appendChild(last);
+    exerciseCell.appendChild(title);
+    exerciseCell.appendChild(meta);
+
+    const prCell = document.createElement('div');
+    const prSet = record.maxWeightSet || record.maxE1rmSet;
+    const prValue = document.createElement('div');
+    prValue.className = 'records-value';
+    prValue.textContent = prSet
+      ? `${formatNumber(prSet.weight)} kg x ${prSet.reps ?? '-'}`
+      : '-';
+    const prSub = document.createElement('div');
+    prSub.className = 'records-sub';
+    prSub.textContent = prSet?.rir != null ? `RIR ${prSet.rir}` : 'Mejor set';
+    prCell.appendChild(prValue);
+    prCell.appendChild(prSub);
+
+    const e1rmCell = document.createElement('div');
+    const e1rmValue = document.createElement('div');
+    e1rmValue.className = 'records-value';
+    e1rmValue.textContent = record.maxE1rm ? `${formatNumber(record.maxE1rm)} kg` : '-';
+    const e1rmSub = document.createElement('div');
+    e1rmSub.className = 'records-sub';
+    e1rmSub.textContent = record.maxE1rm ? 'e1RM' : 'Sin e1RM';
+    e1rmCell.appendChild(e1rmValue);
+    e1rmCell.appendChild(e1rmSub);
+
+    const dateCell = document.createElement('div');
+    const dateValue = document.createElement('div');
+    dateValue.className = 'records-value';
+    dateValue.textContent = record.prDate ? formatDate(record.prDate) : '-';
+    const dateSub = document.createElement('div');
+    dateSub.className = 'records-sub';
+    dateSub.textContent = record.prDate ? 'Fecha PR' : 'Sin fecha';
+    dateCell.appendChild(dateValue);
+    dateCell.appendChild(dateSub);
+
+    const sessionsCell = document.createElement('div');
+    const sessionsValue = document.createElement('div');
+    sessionsValue.className = 'records-value';
+    sessionsValue.textContent = `${record.sessionCount}`;
+    const sessionsSub = document.createElement('div');
+    sessionsSub.className = 'records-sub';
+    sessionsSub.textContent = 'Sesiones';
+    sessionsCell.appendChild(sessionsValue);
+    sessionsCell.appendChild(sessionsSub);
+
+    row.appendChild(exerciseCell);
+    row.appendChild(prCell);
+    row.appendChild(e1rmCell);
+    row.appendChild(dateCell);
+    row.appendChild(sessionsCell);
+    recordsList.appendChild(row);
+  });
 };
 
 const openHistorySession = async (sessionId) => {
@@ -2767,6 +3020,20 @@ routineCategoryFilter.addEventListener('change', async (event) => {
   await updateRoutineExerciseOptions();
 });
 
+if (recordsSearch) {
+  recordsSearch.addEventListener('input', async (event) => {
+    state.recordsSearch = event.target.value.trim().toLowerCase();
+    await renderRecords();
+  });
+}
+
+if (recordsCategoryFilter) {
+  recordsCategoryFilter.addEventListener('change', async (event) => {
+    state.recordsCategoryFilter = event.target.value || 'all';
+    await renderRecords();
+  });
+}
+
 addRoutineItem.addEventListener('click', async (event) => {
   event.preventDefault();
   if (!state.currentRoutineDayId) return;
@@ -2916,6 +3183,7 @@ const importPayload = async (parsed) => {
   await renderCategories();
   await renderRoutineDayList();
   await renderProfile();
+  await renderRecords();
   await renderHomeDashboard();
 };
 
@@ -3722,6 +3990,9 @@ navButtons.forEach((button) => {
     }
     if (route === 'profile') {
       renderProfile();
+    }
+    if (route === 'records') {
+      renderRecords();
     }
     if (profileMenu) {
       profileMenu.classList.remove('is-open');
