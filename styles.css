@@ -1198,10 +1198,9 @@ body {
 }
 
 .running-row {
-  display: grid;
-  grid-template-columns: 0.9fr 0.7fr 0.7fr 0.8fr 1.2fr;
-  gap: 16px;
-  align-items: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   padding: 16px 18px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.12);
 }
@@ -1210,18 +1209,11 @@ body {
   border-bottom: none;
 }
 
-.running-row--compact {
-  grid-template-columns: 1fr;
-  gap: 6px;
-}
-
-.running-line {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  font-weight: 600;
-  font-size: 0.95rem;
-  letter-spacing: 0.02em;
+.running-grid {
+  display: grid;
+  grid-template-columns: 0.9fr 0.7fr 0.7fr 0.8fr 1.2fr;
+  gap: 16px;
+  align-items: center;
 }
 
 .running-chip {
@@ -1255,12 +1247,13 @@ body {
   border-color: rgba(139, 92, 246, 0.4);
 }
 
-.running-row--action {
-  position: relative;
+.running-note--inline {
+  font-size: 0.85rem;
+  color: var(--muted);
 }
 
 .running-row--action .button {
-  justify-self: flex-start;
+  align-self: flex-start;
 }
 
 .running-note {
@@ -1319,7 +1312,7 @@ body {
     gap: 10px;
   }
 
-  .running-row {
+  .running-grid {
     grid-template-columns: 1fr;
     gap: 8px;
   }
