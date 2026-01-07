@@ -3553,6 +3553,9 @@ navButtons.forEach((button) => {
     if (route === 'profile') {
       renderProfile();
     }
+    if (profileMenu) {
+      profileMenu.classList.remove('is-open');
+    }
   });
 });
 
@@ -3659,6 +3662,19 @@ if (profileLogout) {
     await supabaseClient.auth.signOut();
   });
 }
+
+if (profileButton && profileMenu) {
+  profileButton.addEventListener('click', (event) => {
+    event.preventDefault();
+    profileMenu.classList.toggle('is-open');
+  });
+}
+
+document.addEventListener('click', (event) => {
+  if (!profileMenu || !profileMenu.classList.contains('is-open')) return;
+  if (profileMenu.contains(event.target)) return;
+  profileMenu.classList.remove('is-open');
+});
 
 window.addEventListener('online', updateStatus);
 window.addEventListener('offline', updateStatus);

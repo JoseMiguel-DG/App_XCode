@@ -223,7 +223,8 @@ body {
 }
 
 .profile-menu:hover .profile-card,
-.profile-menu:focus-within .profile-card {
+.profile-menu:focus-within .profile-card,
+.profile-menu.is-open .profile-card {
   display: block;
 }
 
