@@ -1210,6 +1210,17 @@ body {
   border-bottom: none;
 }
 
+.running-row--compact {
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.running-line {
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
 .running-note {
   font-size: 0.85rem;
   color: var(--muted);

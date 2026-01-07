@@ -75,7 +75,7 @@
       media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)"
     />
 
-    <link rel="stylesheet" href="styles.css?v=0.10.6" />
+    <link rel="stylesheet" href="styles.css?v=0.10.7" />
   </head>
   <body>
     <div class="app">
@@ -477,7 +477,13 @@
                 </div>
                 <div class="form__field">
                   <label class="form__label" for="runningDuration">Tiempo</label>
-                  <input class="form__input" id="runningDuration" type="time" step="1" />
+                  <input
+                    class="form__input"
+                    id="runningDuration"
+                    type="text"
+                    inputmode="numeric"
+                    placeholder="mm:ss o hh:mm:ss"
+                  />
                 </div>
                 <div class="form__field">
                   <label class="form__label" for="runningDistance">Distancia (km)</label>
@@ -1207,6 +1213,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=0.10.6"></script>
+    <script src="app.js?v=0.10.7"></script>
   </body>
 </html>

@@ -228,7 +228,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.10.6';
+const APP_VERSION = '0.10.7';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 
 const state = {
@@ -1469,10 +1469,12 @@ const formatPaceInput = (secondsPerKm) => {
 
 const parseTimeToSeconds = (value) => {
   if (!value) return null;
-  const parts = value.split(':').map((part) => Number(part));
+  const normalized = value.trim();
+  if (!normalized) return null;
+  const parts = normalized.split(':').map((part) => Number(part));
   if (parts.some((part) => Number.isNaN(part))) return null;
   if (parts.length === 2) {
-    return parts[0] * 3600 + parts[1] * 60;
+    return parts[0] * 60 + parts[1];
   }
   if (parts.length === 3) {
     return parts[0] * 3600 + parts[1] * 60 + parts[2];
@@ -1830,29 +1832,22 @@ const renderHistoryRunningList = async () => {
 
   sorted.forEach((session) => {
     const row = document.createElement('div');
-    row.className = 'running-row';
+    row.className = 'running-row running-row--compact';
 
-    const dateCell = document.createElement('div');
-    dateCell.textContent = session.finishedAt ? formatDate(session.finishedAt) : '-';
+    const line = document.createElement('div');
+    line.className = 'running-line';
+    const dateText = session.finishedAt ? formatDate(session.finishedAt) : '-';
+    const distanceText = `${formatNumber(session.distanceKm, 2)} km`;
+    const durationText = formatDuration(session.durationSeconds);
+    const paceText = formatPace(session.paceSeconds);
+    line.textContent = `${dateText} · ${distanceText} · ${durationText} · ${paceText}`;
 
-    const distanceCell = document.createElement('div');
-    distanceCell.textContent = `${formatNumber(session.distanceKm, 2)} km`;
+    const notes = document.createElement('div');
+    notes.className = 'running-note';
+    notes.textContent = session.notes || '-';
 
-    const durationCell = document.createElement('div');
-    durationCell.textContent = formatDuration(session.durationSeconds);
-
-    const paceCell = document.createElement('div');
-    paceCell.textContent = formatPace(session.paceSeconds);
-
-    const notesCell = document.createElement('div');
-    notesCell.className = 'running-note';
-    notesCell.textContent = session.notes || '-';
-
-    row.appendChild(dateCell);
-    row.appendChild(distanceCell);
-    row.appendChild(durationCell);
-    row.appendChild(paceCell);
-    row.appendChild(notesCell);
+    row.appendChild(line);
+    row.appendChild(notes);
     historyRunningList.appendChild(row);
   });
 };
@@ -1941,29 +1936,22 @@ const renderRunningList = (sessions) => {
 
   sessions.slice(0, 10).forEach((session) => {
     const row = document.createElement('div');
-    row.className = 'running-row';
+    row.className = 'running-row running-row--compact';
 
-    const dateCell = document.createElement('div');
-    dateCell.textContent = session.finishedAt ? formatDate(session.finishedAt) : '-';
+    const line = document.createElement('div');
+    line.className = 'running-line';
+    const dateText = session.finishedAt ? formatDate(session.finishedAt) : '-';
+    const distanceText = `${formatNumber(session.distanceKm, 2)} km`;
+    const durationText = formatDuration(session.durationSeconds);
+    const paceText = formatPace(session.paceSeconds);
+    line.textContent = `${dateText} · ${distanceText} · ${durationText} · ${paceText}`;
 
-    const distanceCell = document.createElement('div');
-    distanceCell.textContent = `${formatNumber(session.distanceKm, 2)} km`;
+    const notes = document.createElement('div');
+    notes.className = 'running-note';
+    notes.textContent = session.notes || '-';
 
-    const durationCell = document.createElement('div');
-    durationCell.textContent = formatDuration(session.durationSeconds);
-
-    const paceCell = document.createElement('div');
-    paceCell.textContent = formatPace(session.paceSeconds);
-
-    const notesCell = document.createElement('div');
-    notesCell.className = 'running-note';
-    notesCell.textContent = session.notes || '-';
-
-    row.appendChild(dateCell);
-    row.appendChild(distanceCell);
-    row.appendChild(durationCell);
-    row.appendChild(paceCell);
-    row.appendChild(notesCell);
+    row.appendChild(line);
+    row.appendChild(notes);
     runningList.appendChild(row);
   });
 };
@@ -2035,29 +2023,22 @@ const renderRunningRecords = async () => {
 
   sorted.slice(0, 8).forEach((session) => {
     const row = document.createElement('div');
-    row.className = 'running-row';
+    row.className = 'running-row running-row--compact';
 
-    const dateCell = document.createElement('div');
-    dateCell.textContent = session.finishedAt ? formatDate(session.finishedAt) : '-';
+    const line = document.createElement('div');
+    line.className = 'running-line';
+    const dateText = session.finishedAt ? formatDate(session.finishedAt) : '-';
+    const distanceText = `${formatNumber(session.distanceKm, 2)} km`;
+    const durationText = formatDuration(session.durationSeconds);
+    const paceText = formatPace(session.paceSeconds);
+    line.textContent = `${dateText} · ${distanceText} · ${durationText} · ${paceText}`;
 
-    const distanceCell = document.createElement('div');
-    distanceCell.textContent = `${formatNumber(session.distanceKm, 2)} km`;
+    const notes = document.createElement('div');
+    notes.className = 'running-note';
+    notes.textContent = session.notes || '-';
 
-    const durationCell = document.createElement('div');
-    durationCell.textContent = formatDuration(session.durationSeconds);
-
-    const paceCell = document.createElement('div');
-    paceCell.textContent = formatPace(session.paceSeconds);
-
-    const notesCell = document.createElement('div');
-    notesCell.className = 'running-note';
-    notesCell.textContent = session.notes || '-';
-
-    row.appendChild(dateCell);
-    row.appendChild(distanceCell);
-    row.appendChild(durationCell);
-    row.appendChild(paceCell);
-    row.appendChild(notesCell);
+    row.appendChild(line);
+    row.appendChild(notes);
     recordsRunningList.appendChild(row);
   });
 };
