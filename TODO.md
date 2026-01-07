@@ -3,4 +3,5 @@
 - Arreglar Olvidó su contraseña
 - Quitar zoom en la app movil (por ejemplo con doble toque o con gesto de ampliar)
 - Sistema de amistades
+- Grupos de amistades
 - Añadir records de running
