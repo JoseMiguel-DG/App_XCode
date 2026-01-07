@@ -177,6 +177,8 @@ const THEME_KEY = 'personal-pwa-theme';
 const LAST_ROUTINE_DAY_KEY = 'last-routine-day-id';
 const ENABLE_SEED = true;
 const CLOUD_LOCAL_UPDATED_KEY = 'cloud-local-updated-at';
+const CLOUD_LAST_UPLOADED_KEY = 'cloud-last-uploaded-at';
+const CLOUD_POLL_INTERVAL_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
 const APP_VERSION = '0.9.0';
@@ -205,6 +207,8 @@ const supabaseClient =
     : null;
 let cloudUser = null;
 let cloudSyncTimer = null;
+let cloudSyncInFlight = false;
+let cloudPollTimer = null;
 let isCloudImporting = false;
 let isSeeding = false;
 let cloudReady = false;
@@ -224,32 +228,7 @@ const scheduleCloudSync = () => {
     'warn'
   );
   cloudSyncTimer = setTimeout(async () => {
-    try {
-      if (!navigator.onLine) {
-        setCloudStatus('Sin conexion. Pendiente de sincronizar...', 'warn');
-        return;
-      }
-      const payload = await getExportPayload();
-      const { error } = await supabaseClient.from('user_data').upsert(
-        {
-          user_id: cloudUser.id,
-          data: payload,
-          updated_at: new Date().toISOString(),
-        },
-        { onConflict: 'user_id' }
-      );
-      if (error) {
-        setCloudError(error.message);
-        setCloudStatus('Error al sincronizar. Pendiente de reintento.', 'error');
-        return;
-      }
-      cloudSyncPending = false;
-      setCloudStatus('Sincronizado.', 'ok');
-      setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(new Date().toISOString())}`);
-    } catch (error) {
-      setCloudError(error.message);
-      setCloudStatus('Error al sincronizar. Pendiente de reintento.', 'error');
-    }
+    await performCloudUpload();
   }, 1200);
 };
 
@@ -3079,6 +3058,128 @@ const setCloudLastSync = (label) => {
   }
 };
 
+const getLastUploadedAt = () => {
+  const value = localStorage.getItem(CLOUD_LAST_UPLOADED_KEY);
+  return value ? Date.parse(value) : null;
+};
+
+const setLastUploadedAt = (value) => {
+  const iso = value instanceof Date ? value.toISOString() : value;
+  if (iso) {
+    localStorage.setItem(CLOUD_LAST_UPLOADED_KEY, iso);
+  }
+};
+
+const hasPendingLocalChanges = () => {
+  const localUpdatedAt = getLocalUpdatedAt();
+  const lastUploadedAt = getLastUploadedAt();
+  if (!localUpdatedAt) return false;
+  if (!lastUploadedAt) return true;
+  return localUpdatedAt > lastUploadedAt;
+};
+
+const performCloudUpload = async () => {
+  if (!supabaseClient || !cloudUser || isCloudImporting || !cloudReady) return false;
+  if (cloudSyncInFlight) return false;
+  cloudSyncInFlight = true;
+  try {
+    if (!navigator.onLine) {
+      setCloudStatus('Sin conexion. Pendiente de sincronizar...', 'warn');
+      return false;
+    }
+    const payload = await getExportPayload();
+    const uploadedAt = new Date().toISOString();
+    const { error } = await supabaseClient.from('user_data').upsert(
+      {
+        user_id: cloudUser.id,
+        data: payload,
+        updated_at: uploadedAt,
+      },
+      { onConflict: 'user_id' }
+    );
+    if (error) {
+      setCloudError(error.message);
+      setCloudStatus('Error al sincronizar. Pendiente de reintento.', 'error');
+      return false;
+    }
+    cloudSyncPending = false;
+    setLastUploadedAt(uploadedAt);
+    setCloudStatus('Sincronizado.', 'ok');
+    setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(uploadedAt)}`);
+    return true;
+  } catch (error) {
+    setCloudError(error.message);
+    setCloudStatus('Error al sincronizar. Pendiente de reintento.', 'error');
+    return false;
+  } finally {
+    cloudSyncInFlight = false;
+  }
+};
+
+const fetchCloudPayload = async () => {
+  if (!supabaseClient || !cloudUser) return null;
+  const { data, error } = await supabaseClient
+    .from('user_data')
+    .select('data, updated_at')
+    .eq('user_id', cloudUser.id)
+    .maybeSingle();
+  if (error) {
+    setCloudError(error.message);
+    return null;
+  }
+  if (!data || !data.data) {
+    return null;
+  }
+  return data;
+};
+
+const syncFromCloudIfNewer = async () => {
+  if (!supabaseClient || !cloudUser || isCloudImporting || !cloudReady) return;
+  if (hasPendingLocalChanges()) {
+    await performCloudUpload();
+  }
+  const cloudPayload = await fetchCloudPayload();
+  if (!cloudPayload) return;
+  const remoteUpdatedAt = cloudPayload.updated_at ? Date.parse(cloudPayload.updated_at) : null;
+  const localUpdatedAt = getLocalUpdatedAt();
+  const lastUploadedAt = getLastUploadedAt();
+  const baseline = lastUploadedAt || localUpdatedAt;
+  if (remoteUpdatedAt && (!baseline || remoteUpdatedAt > baseline)) {
+    try {
+      isCloudImporting = true;
+      await importPayload(cloudPayload.data);
+      setCloudStatus('Datos descargados.', 'ok');
+      setLocalUpdatedAt(cloudPayload.updated_at);
+      setLastUploadedAt(cloudPayload.updated_at);
+      setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(cloudPayload.updated_at)}`);
+    } catch (err) {
+      setCloudError(err.message);
+      setCloudStatus('Error al descargar.', 'error');
+    } finally {
+      isCloudImporting = false;
+    }
+  }
+};
+
+const startCloudPolling = () => {
+  if (cloudPollTimer) {
+    clearInterval(cloudPollTimer);
+  }
+  if (!supabaseClient || !cloudUser) return;
+  cloudPollTimer = setInterval(() => {
+    if (!isAuthenticated) return;
+    if (document.hidden) return;
+    syncFromCloudIfNewer();
+  }, CLOUD_POLL_INTERVAL_MS);
+};
+
+const stopCloudPolling = () => {
+  if (cloudPollTimer) {
+    clearInterval(cloudPollTimer);
+    cloudPollTimer = null;
+  }
+};
+
 const cleanupEmptySessions = async () => {
   const sessions = await trainingRepository.listAllSessions();
   const active = sessions.filter((session) => !session.finishedAt);
@@ -3130,11 +3231,13 @@ const updateCloudUI = (user) => {
     if (cloudSessionPanel) cloudSessionPanel.hidden = false;
     if (cloudAuthForm) cloudAuthForm.hidden = true;
     renderProfile();
+    startCloudPolling();
     const route = location.hash.replace('#', '') || 'home';
     setView(route === 'auth' ? 'home' : route);
   } else {
     setCloudStatus('No autenticado.', 'warn');
     setCloudControls(false);
+    stopCloudPolling();
     if (profileMenu) {
       profileMenu.hidden = true;
     }
@@ -3163,26 +3266,18 @@ const setLocalUpdatedAt = (value) => {
 
 const maybeAutoDownload = async (user) => {
   if (!supabaseClient || !user) return;
-  const { data, error } = await supabaseClient
-    .from('user_data')
-    .select('data, updated_at')
-    .eq('user_id', user.id)
-    .maybeSingle();
-  if (error) {
-    setCloudError(error.message);
-    return;
-  }
-  if (!data || !data.data) {
+  const cloudPayload = await fetchCloudPayload();
+  if (!cloudPayload) {
     setCloudStatus('No hay datos en la nube.', 'warn');
     return;
   }
-
   try {
     isCloudImporting = true;
-    await importPayload(data.data);
+    await importPayload(cloudPayload.data);
     setCloudStatus('Datos descargados.', 'ok');
-    setLocalUpdatedAt(data.updated_at);
-    setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(data.updated_at)}`);
+    setLocalUpdatedAt(cloudPayload.updated_at);
+    setLastUploadedAt(cloudPayload.updated_at);
+    setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(cloudPayload.updated_at)}`);
   } catch (err) {
     setCloudError(err.message);
     setCloudStatus('Error al descargar.', 'error');
@@ -3744,6 +3839,18 @@ navigator.serviceWorker?.addEventListener('controllerchange', () => {
     sessionStorage.removeItem('sw-updating');
   }
   window.location.reload();
+});
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && isAuthenticated) {
+    syncFromCloudIfNewer();
+  }
+});
+
+window.addEventListener('focus', () => {
+  if (isAuthenticated) {
+    syncFromCloudIfNewer();
+  }
 });
 
 const startApp = async () => {
