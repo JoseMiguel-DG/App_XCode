@@ -75,7 +75,7 @@
       media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)"
     />
 
-    <link rel="stylesheet" href="styles.css?v=0.11.5" />
+    <link rel="stylesheet" href="styles.css?v=0.11.6" />
   </head>
   <body>
     <div class="app">
@@ -704,54 +704,71 @@
 
           <div class="friends-layout">
             <div class="friends-stack">
-              <div class="card">
-                <p class="card__title">Agregar amigo</p>
-                <div class="records-controls__row">
-                  <div class="form__field">
-                    <label class="form__label" for="friendEmail">Email</label>
-                    <input class="form__input" id="friendEmail" type="email" />
-                  </div>
-                  <div class="form__field">
-                    <label class="form__label">&nbsp;</label>
-                    <button class="button button--primary" id="friendAdd">Enviar solicitud</button>
-                  </div>
+              <div class="card friends-focus">
+                <div class="card__row">
+                  <p class="card__title">Amigos</p>
                 </div>
-                <p class="form__error" id="friendError"></p>
-              </div>
-
-              <div class="card">
-                <p class="card__title">Solicitudes</p>
-                <div class="stack" id="friendRequestsList"></div>
-              </div>
-
-              <div class="card">
-                <p class="card__title">Amigos</p>
                 <div class="stack" id="friendsList"></div>
               </div>
 
-              <div class="card">
-                <p class="card__title">Notificaciones</p>
-                <div class="stack" id="friendsNotificationsList"></div>
-              </div>
+              <details class="card friends-compact" open>
+                <summary class="friends-compact__summary">
+                  <span>Agregar amigo</span>
+                </summary>
+                <div class="friends-compact__body">
+                  <div class="records-controls__row">
+                    <div class="form__field">
+                      <label class="form__label" for="friendEmail">Email</label>
+                      <input class="form__input" id="friendEmail" type="email" />
+                    </div>
+                    <div class="form__field">
+                      <label class="form__label">&nbsp;</label>
+                      <button class="button button--primary" id="friendAdd">Enviar solicitud</button>
+                    </div>
+                  </div>
+                  <p class="form__error" id="friendError"></p>
+                </div>
+              </details>
+
+              <details class="card friends-compact">
+                <summary class="friends-compact__summary">
+                  <span>Solicitudes</span>
+                </summary>
+                <div class="friends-compact__body">
+                  <div class="stack" id="friendRequestsList"></div>
+                </div>
+              </details>
             </div>
 
-            <div class="card friends-profile" id="friendsProfile" hidden>
-              <div class="friends-profile__header">
-                <div class="friends-profile__avatar" id="friendsProfileAvatar"></div>
-                <div>
-                  <p class="friends-profile__name" id="friendsProfileName"></p>
-                  <p class="friends-profile__bio" id="friendsProfileBio"></p>
+            <div class="friends-side">
+              <div class="card friends-profile" id="friendsProfile" hidden>
+                <div class="friends-profile__header">
+                  <div class="friends-profile__avatar" id="friendsProfileAvatar"></div>
+                  <div>
+                    <p class="friends-profile__name" id="friendsProfileName"></p>
+                    <p class="friends-profile__bio" id="friendsProfileBio"></p>
+                  </div>
+                </div>
+                <div class="friends-profile__stats" id="friendsProfileStats"></div>
+                <div class="friends-profile__section">
+                  <p class="card__title">Entrenos recientes</p>
+                  <div class="stack" id="friendsProfileRecent"></div>
+                </div>
+                <div class="friends-profile__actions">
+                  <button class="button button--ghost" id="friendsWave">Enviar saludo</button>
+                  <button class="button button--ghost" id="friendsRemove">Eliminar amigo</button>
+                  <button class="button button--danger" id="friendsBlock">Bloquear</button>
                 </div>
               </div>
-              <div class="friends-profile__stats" id="friendsProfileStats"></div>
-              <div class="friends-profile__section">
-                <p class="card__title">Entrenos recientes</p>
-                <div class="stack" id="friendsProfileRecent"></div>
-              </div>
-              <div class="friends-profile__actions">
-                <button class="button button--ghost" id="friendsRemove">Eliminar amigo</button>
-                <button class="button button--danger" id="friendsBlock">Bloquear</button>
-              </div>
+
+              <details class="card friends-compact friends-compact--notify" open>
+                <summary class="friends-compact__summary">
+                  <span>Notificaciones</span>
+                </summary>
+                <div class="friends-compact__body">
+                  <div class="stack" id="friendsNotificationsList"></div>
+                </div>
+              </details>
             </div>
           </div>
         </section>
@@ -1283,6 +1300,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=0.11.5"></script>
+    <script src="app.js?v=0.11.6"></script>
   </body>
 </html>

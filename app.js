@@ -139,6 +139,7 @@ const friendsProfileStats = document.getElementById('friendsProfileStats');
 const friendsProfileRecent = document.getElementById('friendsProfileRecent');
 const friendsRemove = document.getElementById('friendsRemove');
 const friendsBlock = document.getElementById('friendsBlock');
+const friendsWave = document.getElementById('friendsWave');
 const profileMenu = document.getElementById('profileMenu');
 const profileButton = document.getElementById('profileButton');
 const settingsButton = document.getElementById('settingsButton');
@@ -244,7 +245,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.11.5';
+const APP_VERSION = '0.11.6';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 const FRIEND_STATUS = {
   PENDING: 'pending',
@@ -2384,6 +2385,17 @@ const blockFriendship = async (friendId) => {
   await renderFriendsView();
 };
 
+const sendFriendWave = async (friendId) => {
+  if (!supabaseClient || !cloudUser) return;
+  const { error } = await supabaseClient.from('notifications').insert({
+    user_id: friendId,
+    message: 'Te ha enviado un saludo 👋',
+  });
+  if (error) {
+    setCloudError(error.message);
+  }
+};
+
 const setHistoryMode = (mode) => {
   state.historyMode = mode;
   if (historyModeGym) historyModeGym.classList.toggle('is-active', mode === 'gym');
@@ -3915,6 +3927,13 @@ if (friendsBlock) {
     });
     if (!ok) return;
     await blockFriendship(state.currentFriendId);
+  });
+}
+
+if (friendsWave) {
+  friendsWave.addEventListener('click', async () => {
+    if (!state.currentFriendId) return;
+    await sendFriendWave(state.currentFriendId);
   });
 }
 
