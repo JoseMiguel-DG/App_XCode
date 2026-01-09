@@ -257,7 +257,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.13.1';
+const APP_VERSION = '0.13.2';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 const FRIEND_STATUS = {
   PENDING: 'pending',
@@ -274,6 +274,12 @@ const WEEK_DAYS = [
   { key: 'sat', label: 'Sabado' },
   { key: 'sun', label: 'Domingo' },
 ];
+
+const getTodayWeekKey = () => {
+  const day = new Date().getDay();
+  const map = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  return map[day] || 'mon';
+};
 
 const state = {
   theme: 'dark',
@@ -3626,7 +3632,10 @@ const openRoutineDayEditor = async (routineDayId) => {
 };
 
 const renderRoutineDaySelect = async () => {
-  const days = await routineRepository.listRoutineDays();
+  const [days, weeklyPlan] = await Promise.all([
+    routineRepository.listRoutineDays(),
+    weeklyPlanRepository.listAll(),
+  ]);
   routineDaySelect.innerHTML = '';
   if (days.length === 0) {
     const option = document.createElement('option');
@@ -3638,8 +3647,18 @@ const renderRoutineDaySelect = async () => {
     return;
   }
   routineDaySelect.disabled = false;
+  const todayKey = getTodayWeekKey();
+  const todayAssignments = (weeklyPlan || [])
+    .filter((item) => item.dayKey === todayKey)
+    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const todayRoutineId = todayAssignments.find((item) =>
+    days.some((day) => day.id === item.routineDayId)
+  )?.routineDayId;
   const last = localStorage.getItem(LAST_ROUTINE_DAY_KEY);
-  const selected = days.find((day) => day.id === last) || days[0];
+  const selected =
+    days.find((day) => day.id === todayRoutineId) ||
+    days.find((day) => day.id === last) ||
+    days[0];
   days.forEach((day) => {
     const option = document.createElement('option');
     option.value = day.id;
