@@ -1457,6 +1457,58 @@ body {
   gap: 8px;
 }
 
+.weekly-plan {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.weekly-plan__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.weekly-day {
+  border-radius: 14px;
+  padding: 12px;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(15, 23, 42, 0.65);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.weekly-day__title {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--muted);
+}
+
+.weekly-day__list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weekly-day__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.weekly-day__actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+}
+
 .modal {
   position: fixed;
   inset: 0;

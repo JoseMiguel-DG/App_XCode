@@ -85,6 +85,7 @@ const routineExerciseSearch = document.getElementById('routineExerciseSearch');
 const routineCategoryFilter = document.getElementById('routineCategoryFilter');
 const routineExerciseSelect = document.getElementById('routineExerciseSelect');
 const addRoutineItem = document.getElementById('addRoutineItem');
+const weeklyPlanGrid = document.getElementById('weeklyPlanGrid');
 
 const backToTrain = document.getElementById('backToTrain');
 const workoutTitle = document.getElementById('workoutTitle');
@@ -256,7 +257,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.12.1';
+const APP_VERSION = '0.13.0';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 const FRIEND_STATUS = {
   PENDING: 'pending',
@@ -264,6 +265,15 @@ const FRIEND_STATUS = {
   REJECTED: 'rejected',
   BLOCKED: 'blocked',
 };
+const WEEK_DAYS = [
+  { key: 'mon', label: 'Lunes' },
+  { key: 'tue', label: 'Martes' },
+  { key: 'wed', label: 'Miercoles' },
+  { key: 'thu', label: 'Jueves' },
+  { key: 'fri', label: 'Viernes' },
+  { key: 'sat', label: 'Sabado' },
+  { key: 'sun', label: 'Domingo' },
+];
 
 const state = {
   theme: 'dark',
@@ -370,7 +380,7 @@ const updateStatus = () => {
 
 const openDatabase = () =>
   new Promise((resolve, reject) => {
-    const request = indexedDB.open(STORAGE_DB, 5);
+    const request = indexedDB.open(STORAGE_DB, 6);
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains('categories')) {
@@ -389,6 +399,10 @@ const openDatabase = () =>
       if (!db.objectStoreNames.contains('routineItems')) {
         const routineItemStore = db.createObjectStore('routineItems', { keyPath: 'id' });
         routineItemStore.createIndex('routineDayId', 'routineDayId', { unique: false });
+      }
+      if (!db.objectStoreNames.contains('weeklyPlan')) {
+        const weeklyStore = db.createObjectStore('weeklyPlan', { keyPath: 'id' });
+        weeklyStore.createIndex('dayKey', 'dayKey', { unique: false });
       }
       if (!db.objectStoreNames.contains('trainingSessions')) {
         const sessionStore = db.createObjectStore('trainingSessions', { keyPath: 'id' });
@@ -717,7 +731,7 @@ const routineRepository = {
   },
   async deleteRoutineDay(id) {
     const db = await dbPromise;
-    return new Promise((resolve, reject) => {
+    await new Promise((resolve, reject) => {
       const transaction = db.transaction(['routineDays', 'routineItems'], 'readwrite');
       transaction.objectStore('routineDays').delete(id);
       const itemStore = transaction.objectStore('routineItems');
@@ -733,6 +747,7 @@ const routineRepository = {
       transaction.oncomplete = () => resolve();
       transaction.onerror = () => reject(transaction.error);
     });
+    await weeklyPlanRepository.removeByRoutineDayId(id);
   },
   async duplicateRoutineDay(id) {
     const day = await this.getRoutineDay(id);
@@ -828,6 +843,30 @@ const routineItemRepository = {
   },
   async deleteRoutineItem(id) {
     await deleteFromStore('routineItems', id);
+  },
+};
+
+const weeklyPlanRepository = {
+  async listAll() {
+    return getAllFromStore('weeklyPlan');
+  },
+  async addItem(dayKey, routineDayId) {
+    const item = {
+      id: createId(),
+      dayKey,
+      routineDayId,
+      createdAt: new Date().toISOString(),
+    };
+    await putInStore('weeklyPlan', item);
+    return item;
+  },
+  async removeItem(id) {
+    await deleteFromStore('weeklyPlan', id);
+  },
+  async removeByRoutineDayId(routineDayId) {
+    const items = await this.listAll();
+    const matches = items.filter((item) => item.routineDayId === routineDayId);
+    await Promise.all(matches.map((item) => deleteFromStore('weeklyPlan', item.id)));
   },
 };
 
@@ -3279,6 +3318,87 @@ const renderRoutineDayList = async () => {
     item.appendChild(row);
     routineDayList.appendChild(item);
   });
+  await renderWeeklyPlan();
+};
+
+const renderWeeklyPlan = async () => {
+  if (!weeklyPlanGrid) return;
+  const [days, assignments] = await Promise.all([
+    routineRepository.listRoutineDays(),
+    weeklyPlanRepository.listAll(),
+  ]);
+  weeklyPlanGrid.innerHTML = '';
+  const routineMap = new Map(days.map((day) => [day.id, day]));
+
+  WEEK_DAYS.forEach((weekday) => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'weekly-day';
+
+    const title = document.createElement('div');
+    title.className = 'weekly-day__title';
+    title.textContent = weekday.label;
+
+    const list = document.createElement('div');
+    list.className = 'weekly-day__list';
+    const items = assignments.filter((item) => item.dayKey === weekday.key);
+    if (items.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'empty-state';
+      empty.textContent = 'Sin rutinas asignadas.';
+      list.appendChild(empty);
+    } else {
+      items.forEach((item) => {
+        const row = document.createElement('div');
+        row.className = 'weekly-day__item';
+        const label = document.createElement('div');
+        label.className = 'list__title';
+        label.textContent = routineMap.get(item.routineDayId)?.name || 'Rutina eliminada';
+        const remove = createIconButton({
+          title: 'Quitar',
+          className: 'icon-button icon-button--danger',
+          paths: ICONS.trash,
+        });
+        remove.addEventListener('click', async () => {
+          await weeklyPlanRepository.removeItem(item.id);
+          await renderWeeklyPlan();
+        });
+        row.appendChild(label);
+        row.appendChild(remove);
+        list.appendChild(row);
+      });
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'weekly-day__actions';
+    const select = document.createElement('select');
+    select.className = 'form__input';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Selecciona rutina';
+    select.appendChild(placeholder);
+    days.forEach((day) => {
+      const option = document.createElement('option');
+      option.value = day.id;
+      option.textContent = day.name;
+      select.appendChild(option);
+    });
+    const addButton = document.createElement('button');
+    addButton.className = 'button button--primary';
+    addButton.textContent = 'Agregar';
+    addButton.addEventListener('click', async () => {
+      if (!select.value) return;
+      await weeklyPlanRepository.addItem(weekday.key, select.value);
+      select.value = '';
+      await renderWeeklyPlan();
+    });
+    actions.appendChild(select);
+    actions.appendChild(addButton);
+
+    wrapper.appendChild(title);
+    wrapper.appendChild(list);
+    wrapper.appendChild(actions);
+    weeklyPlanGrid.appendChild(wrapper);
+  });
 };
 
 const fillRoutineCategoryFilter = async () => {
@@ -4285,6 +4405,7 @@ const CLOUD_STORES = [
   'exercises',
   'routineDays',
   'routineItems',
+  'weeklyPlan',
   'trainingSessions',
   'sessionExerciseLogs',
   'runningSessions',

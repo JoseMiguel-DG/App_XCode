@@ -75,7 +75,7 @@
       media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)"
     />
 
-    <link rel="stylesheet" href="styles.css?v=0.12.1" />
+    <link rel="stylesheet" href="styles.css?v=0.13.0" />
   </head>
   <body>
     <div class="app">
@@ -949,6 +949,16 @@
             </div>
           </form>
 
+          <div class="card weekly-plan">
+            <div class="card__row">
+              <div>
+                <p class="card__title">Plan semanal</p>
+                <p class="card__text">Asigna rutinas a cada dia (plantilla fija).</p>
+              </div>
+            </div>
+            <div class="weekly-plan__grid" id="weeklyPlanGrid"></div>
+          </div>
+
           <ul class="list" id="routineDayList"></ul>
 
           <div class="card" id="routineEditor" hidden>
@@ -1341,6 +1351,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=0.12.1"></script>
+    <script src="app.js?v=0.13.0"></script>
   </body>
 </html>
