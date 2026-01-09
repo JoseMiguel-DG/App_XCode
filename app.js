@@ -257,7 +257,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.13.6';
+const APP_VERSION = '0.13.7';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 const FRIEND_STATUS = {
   PENDING: 'pending',
@@ -2070,8 +2070,10 @@ const renderHomeDashboard = async () => {
       .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     const routineMap = new Map(routineDays.map((day) => [day.id, day]));
     const dayRoutines = todayAssignments
+      .filter((item) => item.type !== 'running')
       .map((item) => routineMap.get(item.routineDayId))
       .filter(Boolean);
+    const dayRuns = todayAssignments.filter((item) => item.type === 'running');
 
     const lastId = localStorage.getItem(LAST_ROUTINE_DAY_KEY);
     const fallback =
@@ -2080,7 +2082,7 @@ const renderHomeDashboard = async () => {
     homeNextSessionCard.hidden = false;
     homeNextSessionList.innerHTML = '';
 
-    if (dayRoutines.length > 0) {
+    if (dayRoutines.length > 0 || dayRuns.length > 0) {
       homeNextSessionTitle.textContent = 'Rutinas de hoy';
       dayRoutines.forEach((routine) => {
         const block = document.createElement('div');
@@ -2124,6 +2126,42 @@ const renderHomeDashboard = async () => {
             list.appendChild(row);
           });
         }
+
+        block.appendChild(header);
+        block.appendChild(list);
+        homeNextSessionList.appendChild(block);
+      });
+
+      dayRuns.forEach((run) => {
+        const block = document.createElement('div');
+        block.className = 'today-session today-session--run';
+
+        const header = document.createElement('div');
+        header.className = 'today-session__header';
+        const title = document.createElement('div');
+        title.className = 'today-session__title';
+        title.textContent = 'Running';
+        const meta = document.createElement('div');
+        meta.className = 'today-session__meta';
+        meta.textContent = run.targetKm ? `Objetivo ${formatNumber(run.targetKm, 1)} km` : 'Sesion libre';
+        header.appendChild(title);
+        header.appendChild(meta);
+
+        const list = document.createElement('div');
+        list.className = 'today-session__list';
+        const row = document.createElement('div');
+        row.className = 'today-session__row';
+        const badge = document.createElement('span');
+        badge.className = 'today-session__index';
+        badge.textContent = 'RUN';
+        const label = document.createElement('span');
+        label.className = 'today-session__name';
+        label.textContent = run.targetKm
+          ? `Planifica ${formatNumber(run.targetKm, 1)} km`
+          : 'Registra tu salida';
+        row.appendChild(badge);
+        row.appendChild(label);
+        list.appendChild(row);
 
         block.appendChild(header);
         block.appendChild(list);

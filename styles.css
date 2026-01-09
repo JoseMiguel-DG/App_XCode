@@ -638,6 +638,19 @@ body {
   color: var(--text);
 }
 
+.today-session--run {
+  border-color: rgba(94, 234, 212, 0.35);
+  background: linear-gradient(150deg, rgba(12, 74, 110, 0.45), rgba(15, 23, 42, 0.85));
+}
+
+.today-session--run .today-session__index {
+  width: 36px;
+  background: rgba(45, 212, 191, 0.3);
+  color: #99f6e4;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+}
+
 .today-session__header {
   display: flex;
   flex-direction: column;
@@ -1582,7 +1595,7 @@ body {
 
 .weekly-plan__grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
   gap: 12px;
 }
 
@@ -1628,7 +1641,7 @@ body {
 
 .weekly-day__row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
 }
@@ -1655,6 +1668,26 @@ body {
 
 .weekly-day__run {
   white-space: nowrap;
+}
+
+.weekly-day__row .form__input {
+  padding: 10px 12px;
+  font-size: 0.9rem;
+}
+
+.weekly-day__row .button {
+  padding: 8px 12px;
+  font-size: 0.85rem;
+}
+
+@media (min-width: 900px) {
+  .weekly-day__row {
+    grid-template-columns: 1fr 90px;
+  }
+
+  .weekly-day__run {
+    min-width: 90px;
+  }
 }
 
 .modal {
