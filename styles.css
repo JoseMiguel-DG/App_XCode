@@ -1621,9 +1621,40 @@ body {
 }
 
 .weekly-day__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.weekly-day__row {
   display: grid;
   grid-template-columns: 1fr auto;
   gap: 8px;
+  align-items: center;
+}
+
+.weekly-day__name {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-weight: 600;
+}
+
+.weekly-day__target {
+  font-size: 0.75rem;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: rgba(56, 189, 248, 0.16);
+  color: #bae6fd;
+}
+
+.weekly-day__km {
+  text-align: center;
+}
+
+.weekly-day__run {
+  white-space: nowrap;
 }
 
 .modal {

@@ -257,7 +257,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.13.5';
+const APP_VERSION = '0.13.6';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 const FRIEND_STATUS = {
   PENDING: 'pending',
@@ -856,11 +856,14 @@ const weeklyPlanRepository = {
   async listAll() {
     return getAllFromStore('weeklyPlan');
   },
-  async addItem(dayKey, routineDayId) {
+  async addItem(dayKey, routineDayId, options = {}) {
+    const { type = 'gym', targetKm = null } = options;
     const item = {
       id: createId(),
       dayKey,
-      routineDayId,
+      routineDayId: routineDayId || null,
+      type,
+      targetKm,
       createdAt: new Date().toISOString(),
     };
     await putInStore('weeklyPlan', item);
@@ -3421,19 +3424,32 @@ const renderWeeklyPlan = async () => {
 
     const list = document.createElement('div');
     list.className = 'weekly-day__list';
-    const items = assignments.filter((item) => item.dayKey === weekday.key);
+    const items = assignments
+      .filter((item) => item.dayKey === weekday.key)
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
     if (items.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'empty-state';
-      empty.textContent = 'Sin rutinas asignadas.';
+      empty.textContent = 'Sin actividades asignadas.';
       list.appendChild(empty);
     } else {
       items.forEach((item) => {
+        const isRunning = item.type === 'running';
         const row = document.createElement('div');
         row.className = 'weekly-day__item';
-        const label = document.createElement('div');
-        label.className = 'list__title';
-        label.textContent = routineMap.get(item.routineDayId)?.name || 'Rutina eliminada';
+        const nameWrap = document.createElement('div');
+        nameWrap.className = 'weekly-day__name';
+        const name = document.createElement('span');
+        name.textContent = isRunning
+          ? 'Running'
+          : routineMap.get(item.routineDayId)?.name || 'Rutina eliminada';
+        nameWrap.appendChild(name);
+        if (isRunning && item.targetKm) {
+          const target = document.createElement('span');
+          target.className = 'weekly-day__target';
+          target.textContent = `${formatNumber(item.targetKm, 1)} km`;
+          nameWrap.appendChild(target);
+        }
         const remove = createIconButton({
           title: 'Quitar',
           className: 'icon-button icon-button--danger',
@@ -3443,7 +3459,7 @@ const renderWeeklyPlan = async () => {
           await weeklyPlanRepository.removeItem(item.id);
           await renderWeeklyPlan();
         });
-        row.appendChild(label);
+        row.appendChild(nameWrap);
         row.appendChild(remove);
         list.appendChild(row);
       });
@@ -3451,6 +3467,8 @@ const renderWeeklyPlan = async () => {
 
     const actions = document.createElement('div');
     actions.className = 'weekly-day__actions';
+    const gymRow = document.createElement('div');
+    gymRow.className = 'weekly-day__row';
     const select = document.createElement('select');
     select.className = 'form__input';
     const placeholder = document.createElement('option');
@@ -3472,8 +3490,36 @@ const renderWeeklyPlan = async () => {
       select.value = '';
       await renderWeeklyPlan();
     });
-    actions.appendChild(select);
-    actions.appendChild(addButton);
+    gymRow.appendChild(select);
+    gymRow.appendChild(addButton);
+
+    const runRow = document.createElement('div');
+    runRow.className = 'weekly-day__row';
+    const runKmInput = document.createElement('input');
+    runKmInput.className = 'form__input weekly-day__km';
+    runKmInput.type = 'number';
+    runKmInput.step = '0.1';
+    runKmInput.min = '0';
+    runKmInput.placeholder = 'Km (opcional)';
+    runKmInput.inputMode = 'decimal';
+    const runButton = document.createElement('button');
+    runButton.className = 'button button--ghost weekly-day__run';
+    runButton.textContent = 'Running';
+    runButton.addEventListener('click', async () => {
+      const kmValue = parseNumber(runKmInput.value || '');
+      const targetKm = kmValue && kmValue > 0 ? kmValue : null;
+      await weeklyPlanRepository.addItem(weekday.key, null, {
+        type: 'running',
+        targetKm,
+      });
+      runKmInput.value = '';
+      await renderWeeklyPlan();
+    });
+    runRow.appendChild(runKmInput);
+    runRow.appendChild(runButton);
+
+    actions.appendChild(gymRow);
+    actions.appendChild(runRow);
 
     wrapper.appendChild(title);
     wrapper.appendChild(list);
