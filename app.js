@@ -145,6 +145,12 @@ const galleryNote = document.getElementById('galleryNote');
 const galleryAdd = document.getElementById('galleryAdd');
 const galleryError = document.getElementById('galleryError');
 const galleryList = document.getElementById('galleryList');
+const galleryModal = document.getElementById('galleryModal');
+const galleryModalBackdrop = document.getElementById('galleryModalBackdrop');
+const galleryModalImage = document.getElementById('galleryModalImage');
+const galleryModalDate = document.getElementById('galleryModalDate');
+const galleryModalNote = document.getElementById('galleryModalNote');
+const galleryModalClose = document.getElementById('galleryModalClose');
 const profileMenu = document.getElementById('profileMenu');
 const profileButton = document.getElementById('profileButton');
 const settingsButton = document.getElementById('settingsButton');
@@ -250,7 +256,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.12.0';
+const APP_VERSION = '0.12.1';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 const FRIEND_STATUS = {
   PENDING: 'pending',
@@ -2447,6 +2453,7 @@ const renderGallery = async () => {
     img.className = 'gallery-card__image';
     img.src = photo.imageData;
     img.alt = 'Foto progreso';
+    img.addEventListener('click', () => openGalleryModal(photo));
 
     const body = document.createElement('div');
     body.className = 'gallery-card__body';
@@ -2484,6 +2491,19 @@ const renderGallery = async () => {
     card.appendChild(body);
     galleryList.appendChild(card);
   });
+};
+
+const openGalleryModal = (photo) => {
+  if (!galleryModal || !galleryModalImage || !galleryModalDate || !galleryModalNote) return;
+  galleryModalImage.src = photo.imageData;
+  galleryModalDate.textContent = formatDate(photo.createdAt);
+  galleryModalNote.textContent = photo.note || 'Sin nota.';
+  galleryModal.hidden = false;
+};
+
+const closeGalleryModal = () => {
+  if (!galleryModal) return;
+  galleryModal.hidden = true;
 };
 
 const setHistoryMode = (mode) => {
@@ -4049,6 +4069,14 @@ if (galleryAdd) {
     };
     reader.readAsDataURL(file);
   });
+}
+
+if (galleryModalBackdrop) {
+  galleryModalBackdrop.addEventListener('click', closeGalleryModal);
+}
+
+if (galleryModalClose) {
+  galleryModalClose.addEventListener('click', closeGalleryModal);
 }
 
 if (historyModeGym) {

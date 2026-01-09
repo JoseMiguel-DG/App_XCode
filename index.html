@@ -75,7 +75,7 @@
       media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)"
     />
 
-    <link rel="stylesheet" href="styles.css?v=0.12.0" />
+    <link rel="stylesheet" href="styles.css?v=0.12.1" />
   </head>
   <body>
     <div class="app">
@@ -802,6 +802,18 @@
           <div class="gallery-grid" id="galleryList"></div>
         </section>
 
+        <div class="modal" id="galleryModal" hidden>
+          <div class="modal__backdrop" id="galleryModalBackdrop"></div>
+          <div class="modal__content">
+            <img class="modal__image" id="galleryModalImage" alt="Foto progreso" />
+            <div class="modal__body">
+              <p class="modal__date" id="galleryModalDate"></p>
+              <p class="modal__note" id="galleryModalNote"></p>
+              <button class="button button--ghost" id="galleryModalClose">Cerrar</button>
+            </div>
+          </div>
+        </div>
+
         <section class="panel" data-view="profile" hidden>
           <div class="panel__header">
             <div>
@@ -1329,6 +1341,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=0.12.0"></script>
+    <script src="app.js?v=0.12.1"></script>
   </body>
 </html>

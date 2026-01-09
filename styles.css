@@ -1457,6 +1457,60 @@ body {
   gap: 8px;
 }
 
+.modal {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 999;
+}
+
+.modal__backdrop {
+  position: absolute;
+  inset: 0;
+}
+
+.modal__content {
+  position: relative;
+  z-index: 1;
+  max-width: 720px;
+  width: 100%;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.55);
+}
+
+.modal__image {
+  width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  background: rgba(15, 23, 42, 0.8);
+}
+
+.modal__body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.modal__date {
+  font-size: 0.8rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.modal__note {
+  font-size: 0.95rem;
+}
+
 .notification-row__time {
   font-size: 0.75rem;
   color: var(--muted);
