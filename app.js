@@ -257,7 +257,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.13.0';
+const APP_VERSION = '0.13.1';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 const FRIEND_STATUS = {
   PENDING: 'pending',
@@ -4724,6 +4724,49 @@ const fetchCloudPayload = async () => {
   return data;
 };
 
+const hydrateProfileFromCloudIfMissing = async () => {
+  if (!supabaseClient || !cloudUser) return;
+  const localProfile = await profileRepository.getProfile();
+  const hasLocalProfile =
+    localProfile && (localProfile.name || localProfile.avatar || localProfile.notes);
+  if (hasLocalProfile) return;
+
+  const payload = await fetchCloudPayload();
+  const profileItems = payload?.data?.data?.profile;
+  if (Array.isArray(profileItems) && profileItems.length > 0) {
+    const profile = profileItems.find((item) => item.id === 'profile') || profileItems[0];
+    if (profile) {
+      await putInStore('profile', profile);
+      await renderProfile();
+      return;
+    }
+  }
+
+  const { data, error } = await supabaseClient
+    .from('profiles')
+    .select('display_name, bio, avatar_url')
+    .eq('user_id', cloudUser.id)
+    .maybeSingle();
+  if (error || !data) return;
+  const fallbackProfile = {
+    id: 'profile',
+    name: data.display_name || '',
+    goal: '',
+    experience: '',
+    age: null,
+    sex: '',
+    frequency: null,
+    height: null,
+    weight: null,
+    notes: data.bio || '',
+    avatar: data.avatar_url || '',
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+  };
+  await putInStore('profile', fallbackProfile);
+  await renderProfile();
+};
+
 const syncFromCloudIfNewer = async () => {
   if (!supabaseClient || !cloudUser || isCloudImporting || !cloudReady) return;
   if (hasPendingLocalChanges()) {
@@ -4744,6 +4787,7 @@ const syncFromCloudIfNewer = async () => {
       setLastUploadedAt(cloudPayload.updated_at);
       setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(cloudPayload.updated_at)}`);
       flashSyncIndicator();
+      await hydrateProfileFromCloudIfMissing();
     } catch (err) {
       setCloudError(err.message);
       setCloudStatus('Error al descargar.', 'error');
@@ -4901,6 +4945,7 @@ const maybeAutoDownload = async (user) => {
     setLocalUpdatedAt(cloudPayload.updated_at);
     setLastUploadedAt(cloudPayload.updated_at);
     setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(cloudPayload.updated_at)}`);
+    await hydrateProfileFromCloudIfMissing();
   } catch (err) {
     setCloudError(err.message);
     setCloudStatus('Error al descargar.', 'error');
