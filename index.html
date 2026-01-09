@@ -75,7 +75,7 @@
       media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)"
     />
 
-    <link rel="stylesheet" href="styles.css?v=0.13.4" />
+    <link rel="stylesheet" href="styles.css?v=0.13.5" />
   </head>
   <body>
     <div class="app">
@@ -382,13 +382,10 @@
             </div>
           </div>
 
-          <div class="card" id="homeNextSessionCard" hidden>
+          <div class="card home-next-session" id="homeNextSessionCard" hidden>
             <p class="card__title">Proxima sesion</p>
             <p class="card__text" id="homeNextSessionTitle"></p>
-            <div class="card__row">
-              <div class="mini-list" id="homeNextSessionList"></div>
-              <button class="button button--primary" id="homeGoTrain">Ir a Entrenar</button>
-            </div>
+            <div class="mini-list home-next-session__list" id="homeNextSessionList"></div>
           </div>
 
           <div class="card" id="homeProfileCard" hidden>
@@ -1351,6 +1348,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=0.13.4"></script>
+    <script src="app.js?v=0.13.5"></script>
   </body>
 </html>

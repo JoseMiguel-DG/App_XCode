@@ -257,7 +257,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.13.4';
+const APP_VERSION = '0.13.5';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 const FRIEND_STATUS = {
   PENDING: 'pending',
@@ -2126,6 +2126,18 @@ const renderHomeDashboard = async () => {
         block.appendChild(list);
         homeNextSessionList.appendChild(block);
       });
+
+      const actionWrap = document.createElement('div');
+      actionWrap.className = 'today-session__cta';
+      const goTrain = document.createElement('button');
+      goTrain.className = 'button button--primary';
+      goTrain.textContent = 'Ir a Entrenar';
+      goTrain.addEventListener('click', () => {
+        setView('train');
+        refreshTrainingHome();
+      });
+      actionWrap.appendChild(goTrain);
+      homeNextSessionList.appendChild(actionWrap);
     } else {
       homeNextSessionTitle.textContent = fallback ? `Rutina sugerida: ${fallback.name}` : '';
       if (fallback) {
