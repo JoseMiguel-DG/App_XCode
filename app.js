@@ -257,7 +257,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.13.2';
+const APP_VERSION = '0.13.3';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 const FRIEND_STATUS = {
   PENDING: 'pending',
@@ -2060,23 +2060,81 @@ const renderHomeDashboard = async () => {
   }
 
   if (routineDays.length > 0) {
+    const [weeklyPlan] = await Promise.all([weeklyPlanRepository.listAll()]);
+    const todayKey = getTodayWeekKey();
+    const todayAssignments = (weeklyPlan || [])
+      .filter((item) => item.dayKey === todayKey)
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    const routineMap = new Map(routineDays.map((day) => [day.id, day]));
+    const dayRoutines = todayAssignments
+      .map((item) => routineMap.get(item.routineDayId))
+      .filter(Boolean);
+
     const lastId = localStorage.getItem(LAST_ROUTINE_DAY_KEY);
-    const selected =
+    const fallback =
       routineDays.find((day) => day.id === lastId) || routineDays[0];
+
     homeNextSessionCard.hidden = false;
-    homeNextSessionTitle.textContent = selected ? `Rutina sugerida: ${selected.name}` : '';
     homeNextSessionList.innerHTML = '';
-    if (selected) {
-      const items = routineItems
-        .filter((item) => item.routineDayId === selected.id)
-        .sort((a, b) => a.order - b.order)
-        .slice(0, 3);
-      items.forEach((item) => {
-        const exercise = exerciseMap.get(item.exerciseId);
-        const span = document.createElement('span');
-        span.textContent = exercise ? exercise.name : 'Ejercicio eliminado';
-        homeNextSessionList.appendChild(span);
+
+    if (dayRoutines.length > 0) {
+      homeNextSessionTitle.textContent = 'Rutinas de hoy';
+      dayRoutines.forEach((routine) => {
+        const block = document.createElement('div');
+        const title = document.createElement('div');
+        title.className = 'list__title';
+        title.textContent = routine.name;
+
+        const details = document.createElement('details');
+        details.className = 'collapsible';
+        const summary = document.createElement('summary');
+        summary.className = 'collapsible__summary';
+        summary.textContent = 'Ver ejercicios';
+        const content = document.createElement('div');
+        content.className = 'collapsible__content';
+
+        const items = routineItems
+          .filter((item) => item.routineDayId === routine.id)
+          .sort((a, b) => a.order - b.order);
+        if (items.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'empty-state';
+          empty.textContent = 'Sin ejercicios.';
+          content.appendChild(empty);
+        } else {
+          const list = document.createElement('div');
+          list.className = 'chip-row';
+          items.forEach((item) => {
+            const exercise = exerciseMap.get(item.exerciseId);
+            const chip = document.createElement('span');
+            chip.className = 'chip';
+            chip.textContent = exercise ? exercise.name : 'Ejercicio eliminado';
+            list.appendChild(chip);
+          });
+          content.appendChild(list);
+        }
+
+        details.appendChild(summary);
+        details.appendChild(content);
+
+        block.appendChild(title);
+        block.appendChild(details);
+        homeNextSessionList.appendChild(block);
       });
+    } else {
+      homeNextSessionTitle.textContent = fallback ? `Rutina sugerida: ${fallback.name}` : '';
+      if (fallback) {
+        const items = routineItems
+          .filter((item) => item.routineDayId === fallback.id)
+          .sort((a, b) => a.order - b.order)
+          .slice(0, 3);
+        items.forEach((item) => {
+          const exercise = exerciseMap.get(item.exerciseId);
+          const span = document.createElement('span');
+          span.textContent = exercise ? exercise.name : 'Ejercicio eliminado';
+          homeNextSessionList.appendChild(span);
+        });
+      }
     }
   } else {
     homeNextSessionCard.hidden = true;
