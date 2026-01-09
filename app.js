@@ -230,6 +230,8 @@ const homeSparkline = document.getElementById('homeSparkline');
 const homeNextSessionCard = document.getElementById('homeNextSessionCard');
 const homeNextSessionTitle = document.getElementById('homeNextSessionTitle');
 const homeNextSessionList = document.getElementById('homeNextSessionList');
+const homeWeekSummary = document.getElementById('homeWeekSummary');
+const homeWeekSummaryList = document.getElementById('homeWeekSummaryList');
 const homeProfileCard = document.getElementById('homeProfileCard');
 const homeProfileSummary = document.getElementById('homeProfileSummary');
 const authTabs = document.querySelectorAll('[data-auth-tab]');
@@ -257,7 +259,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.13.8';
+const APP_VERSION = '0.13.9';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 const FRIEND_STATUS = {
   PENDING: 'pending',
@@ -1921,14 +1923,16 @@ const renderHomeDashboard = async () => {
     return;
   }
 
-  const [sessions, logs, exercises, routineDays, routineItems, profile] = await Promise.all([
-    getAllFromStore('trainingSessions'),
-    getAllFromStore('sessionExerciseLogs'),
-    getAllFromStore('exercises'),
-    getAllFromStore('routineDays'),
-    getAllFromStore('routineItems'),
-    profileRepository.getProfile(),
-  ]);
+  const [sessions, logs, exercises, routineDays, routineItems, profile, weeklyPlan] =
+    await Promise.all([
+      getAllFromStore('trainingSessions'),
+      getAllFromStore('sessionExerciseLogs'),
+      getAllFromStore('exercises'),
+      getAllFromStore('routineDays'),
+      getAllFromStore('routineItems'),
+      profileRepository.getProfile(),
+      weeklyPlanRepository.listAll(),
+    ]);
 
   const exerciseMap = new Map(exercises.map((exercise) => [exercise.id, exercise]));
   const sessionsById = new Map(sessions.map((session) => [session.id, session]));
@@ -2063,7 +2067,6 @@ const renderHomeDashboard = async () => {
   }
 
   if (routineDays.length > 0) {
-    const [weeklyPlan] = await Promise.all([weeklyPlanRepository.listAll()]);
     const todayKey = getTodayWeekKey();
     const todayAssignments = (weeklyPlan || [])
       .filter((item) => item.dayKey === todayKey)
@@ -2214,6 +2217,60 @@ const renderHomeDashboard = async () => {
       homeProfileSummary.textContent = summaryParts.join(' · ');
     } else {
       homeProfileCard.hidden = true;
+    }
+  }
+
+  if (homeWeekSummary && homeWeekSummaryList) {
+    homeWeekSummaryList.innerHTML = '';
+    const hasPlan = Array.isArray(weeklyPlan) && weeklyPlan.length > 0;
+    if (!hasPlan) {
+      homeWeekSummary.hidden = true;
+    } else {
+      homeWeekSummary.hidden = false;
+      const routineMap = new Map(routineDays.map((day) => [day.id, day]));
+      const todayKey = getTodayWeekKey();
+      WEEK_DAYS.forEach((weekday) => {
+        const dayCard = document.createElement('div');
+        dayCard.className = 'week-summary__day';
+        if (weekday.key === todayKey) {
+          dayCard.classList.add('is-today');
+        }
+
+        const title = document.createElement('div');
+        title.className = 'week-summary__title';
+        title.textContent = weekday.label;
+
+        const list = document.createElement('div');
+        list.className = 'week-summary__chips';
+        const items = (weeklyPlan || [])
+          .filter((item) => item.dayKey === weekday.key)
+          .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+        if (items.length === 0) {
+          const empty = document.createElement('div');
+          empty.className = 'week-summary__empty';
+          empty.textContent = 'Libre';
+          list.appendChild(empty);
+        } else {
+          items.forEach((item) => {
+            const isRunning = item.type === 'running';
+            const chip = document.createElement('span');
+            chip.className = isRunning ? 'week-chip week-chip--run' : 'week-chip';
+            if (isRunning) {
+              const kmText = item.targetKm ? ` ${formatNumber(item.targetKm, 1)} km` : '';
+              chip.textContent = `Running${kmText}`;
+            } else {
+              chip.textContent =
+                routineMap.get(item.routineDayId)?.name || 'Rutina eliminada';
+            }
+            list.appendChild(chip);
+          });
+        }
+
+        dayCard.appendChild(title);
+        dayCard.appendChild(list);
+        homeWeekSummaryList.appendChild(dayCard);
+      });
     }
   }
 };

@@ -1,9 +1,8 @@
 - Arreglar Olvidó su contraseña
 - Grupos de amistades
-- Añadir la posibilidad de programar actividades de carrera en el planning semanal (que simeplemente pueda añadir planning semanal los dias que quiero correr, y que pueda o simplemente añadir Running ese dia, o especificar si quiero de manera opcional los Km que pretendo hacer)
-- Botones de rutina de running no funcionan
 - Mensaje raro cuando añaes actividad de running para un dia
 - Ver vista Semanal resumen con los entrenos asignados para cada dia (Que en inicio salga un formato estilo calendario de la semana, Donde ponga Por ejemplo, Lunes y salga Pecho y Running etc, dependiendo de las rutinas asignadas en el planificador semanal) quiero que se vea realmente profesional, y destaque en la ventana de inicio, para que con una simple visual puedas estar contextualizado de cómo será la semana
 - Mejora en la vista de amigos.
 - Mejora en la vista de records, para que no sea una lista tan larga infinita (Y que esté compactada en una linea para no ocupar tanto)
 - Que en la ventana de Ver de un amigo aparezcan tambien los entrenos de running, ya que ahora parece que solo salen los de gym. (tal vez con algun boton para elegir si quiero ver los de running o los de gym)
+- Añadir tracker para el registro calorico
