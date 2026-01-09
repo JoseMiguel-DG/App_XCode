@@ -257,7 +257,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.13.2';
+const APP_VERSION = '0.13.0';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 const FRIEND_STATUS = {
   PENDING: 'pending',
@@ -274,14 +274,6 @@ const WEEK_DAYS = [
   { key: 'sat', label: 'Sabado' },
   { key: 'sun', label: 'Domingo' },
 ];
-
-const getTodayWeekKey = () => {
-  const day = new Date().getDay();
-  const map = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-  return map[day] || 'mon';
-};
-
-const getWeekdayLabel = (key) => WEEK_DAYS.find((day) => day.key === key)?.label || '';
 
 const state = {
   theme: 'dark',
@@ -1685,19 +1677,6 @@ const fetchFriendUserData = async (userId) => {
   return data?.data || null;
 };
 
-const hydrateProfileFromCloudIfMissing = async () => {
-  if (!supabaseClient || !cloudUser) return;
-  const localProfile = await profileRepository.getProfile();
-  if (localProfile) return;
-  const payload = await fetchFriendUserData(cloudUser.id);
-  const profileItems = payload?.data?.profile;
-  if (!Array.isArray(profileItems) || profileItems.length === 0) return;
-  const profile = profileItems.find((item) => item.id === 'profile') || profileItems[0];
-  if (!profile) return;
-  await putInStore('profile', profile);
-  await renderProfile();
-};
-
 const buildFriendStats = (payload) => {
   const sessions = payload?.data?.trainingSessions || [];
   const running = payload?.data?.runningSessions || [];
@@ -1933,13 +1912,12 @@ const renderHomeDashboard = async () => {
     return;
   }
 
-  const [sessions, logs, exercises, routineDays, routineItems, weeklyPlan, profile] = await Promise.all([
+  const [sessions, logs, exercises, routineDays, routineItems, profile] = await Promise.all([
     getAllFromStore('trainingSessions'),
     getAllFromStore('sessionExerciseLogs'),
     getAllFromStore('exercises'),
     getAllFromStore('routineDays'),
     getAllFromStore('routineItems'),
-    getAllFromStore('weeklyPlan'),
     profileRepository.getProfile(),
   ]);
 
@@ -2076,61 +2054,23 @@ const renderHomeDashboard = async () => {
   }
 
   if (routineDays.length > 0) {
-    const todayKey = getTodayWeekKey();
-    const todayLabel = getWeekdayLabel(todayKey);
-    const dayAssignments = (weeklyPlan || [])
-      .filter((item) => item.dayKey === todayKey)
-      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-    const routineMap = new Map(routineDays.map((day) => [day.id, day]));
-    const dayRoutines = dayAssignments
-      .map((item) => routineMap.get(item.routineDayId))
-      .filter(Boolean);
-
-    const fallbackId = localStorage.getItem(LAST_ROUTINE_DAY_KEY);
-    const fallback =
-      routineDays.find((day) => day.id === fallbackId) || routineDays[0];
-
+    const lastId = localStorage.getItem(LAST_ROUTINE_DAY_KEY);
+    const selected =
+      routineDays.find((day) => day.id === lastId) || routineDays[0];
     homeNextSessionCard.hidden = false;
+    homeNextSessionTitle.textContent = selected ? `Rutina sugerida: ${selected.name}` : '';
     homeNextSessionList.innerHTML = '';
-
-    if (dayRoutines.length > 0) {
-      homeNextSessionTitle.textContent = `Rutinas de hoy${todayLabel ? ` · ${todayLabel}` : ''}`;
-      dayRoutines.forEach((routine) => {
-        const block = document.createElement('div');
-        const title = document.createElement('div');
-        title.className = 'list__title';
-        title.textContent = routine.name;
-        const chips = document.createElement('div');
-        chips.className = 'chip-row';
-        const items = routineItems
-          .filter((item) => item.routineDayId === routine.id)
-          .sort((a, b) => a.order - b.order)
-          .slice(0, 4);
-        items.forEach((item) => {
-          const exercise = exerciseMap.get(item.exerciseId);
-          const chip = document.createElement('span');
-          chip.className = 'chip';
-          chip.textContent = exercise ? exercise.name : 'Ejercicio eliminado';
-          chips.appendChild(chip);
-        });
-        block.appendChild(title);
-        block.appendChild(chips);
-        homeNextSessionList.appendChild(block);
+    if (selected) {
+      const items = routineItems
+        .filter((item) => item.routineDayId === selected.id)
+        .sort((a, b) => a.order - b.order)
+        .slice(0, 3);
+      items.forEach((item) => {
+        const exercise = exerciseMap.get(item.exerciseId);
+        const span = document.createElement('span');
+        span.textContent = exercise ? exercise.name : 'Ejercicio eliminado';
+        homeNextSessionList.appendChild(span);
       });
-    } else {
-      homeNextSessionTitle.textContent = fallback ? `Rutina sugerida: ${fallback.name}` : '';
-      if (fallback) {
-        const items = routineItems
-          .filter((item) => item.routineDayId === fallback.id)
-          .sort((a, b) => a.order - b.order)
-          .slice(0, 3);
-        items.forEach((item) => {
-          const exercise = exerciseMap.get(item.exerciseId);
-          const span = document.createElement('span');
-          span.textContent = exercise ? exercise.name : 'Ejercicio eliminado';
-          homeNextSessionList.appendChild(span);
-        });
-      }
     }
   } else {
     homeNextSessionCard.hidden = true;
@@ -3686,10 +3626,7 @@ const openRoutineDayEditor = async (routineDayId) => {
 };
 
 const renderRoutineDaySelect = async () => {
-  const [days, weeklyPlan] = await Promise.all([
-    routineRepository.listRoutineDays(),
-    weeklyPlanRepository.listAll(),
-  ]);
+  const days = await routineRepository.listRoutineDays();
   routineDaySelect.innerHTML = '';
   if (days.length === 0) {
     const option = document.createElement('option');
@@ -3701,18 +3638,8 @@ const renderRoutineDaySelect = async () => {
     return;
   }
   routineDaySelect.disabled = false;
-  const todayKey = getTodayWeekKey();
-  const todayAssignments = (weeklyPlan || [])
-    .filter((item) => item.dayKey === todayKey)
-    .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
-  const todayRoutineId = todayAssignments.find((item) =>
-    days.some((day) => day.id === item.routineDayId)
-  )?.routineDayId;
   const last = localStorage.getItem(LAST_ROUTINE_DAY_KEY);
-  const selected =
-    days.find((day) => day.id === todayRoutineId) ||
-    days.find((day) => day.id === last) ||
-    days[0];
+  const selected = days.find((day) => day.id === last) || days[0];
   days.forEach((day) => {
     const option = document.createElement('option');
     option.value = day.id;
@@ -4811,14 +4738,13 @@ const syncFromCloudIfNewer = async () => {
   if (remoteUpdatedAt && (!baseline || remoteUpdatedAt > baseline)) {
     try {
       isCloudImporting = true;
-    await importPayload(cloudPayload.data);
-    setCloudStatus('Datos descargados.', 'ok');
-    setLocalUpdatedAt(cloudPayload.updated_at);
-    setLastUploadedAt(cloudPayload.updated_at);
-    setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(cloudPayload.updated_at)}`);
-    flashSyncIndicator();
-    await hydrateProfileFromCloudIfMissing();
-  } catch (err) {
+      await importPayload(cloudPayload.data);
+      setCloudStatus('Datos descargados.', 'ok');
+      setLocalUpdatedAt(cloudPayload.updated_at);
+      setLastUploadedAt(cloudPayload.updated_at);
+      setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(cloudPayload.updated_at)}`);
+      flashSyncIndicator();
+    } catch (err) {
       setCloudError(err.message);
       setCloudStatus('Error al descargar.', 'error');
     } finally {
