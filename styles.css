@@ -1607,6 +1607,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  overflow: hidden;
 }
 
 .weekly-day__title {
@@ -1637,6 +1638,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  width: 100%;
 }
 
 .weekly-day__row {
@@ -1644,6 +1646,7 @@ body {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 8px;
   align-items: center;
+  width: 100%;
 }
 
 .weekly-day__name {
@@ -1664,29 +1667,33 @@ body {
 
 .weekly-day__km {
   text-align: center;
+  width: 100%;
 }
 
 .weekly-day__run {
   white-space: nowrap;
+  width: 100%;
 }
 
 .weekly-day__row .form__input {
   padding: 10px 12px;
   font-size: 0.9rem;
+  min-width: 0;
 }
 
 .weekly-day__row .button {
   padding: 8px 12px;
   font-size: 0.85rem;
+  width: 100%;
 }
 
 @media (min-width: 900px) {
   .weekly-day__row {
-    grid-template-columns: 1fr 90px;
+    grid-template-columns: minmax(0, 1fr) 96px;
   }
 
   .weekly-day__run {
-    min-width: 90px;
+    min-width: 96px;
   }
 }
 
