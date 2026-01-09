@@ -75,7 +75,7 @@
       media="(device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2)"
     />
 
-    <link rel="stylesheet" href="styles.css?v=0.11.6" />
+    <link rel="stylesheet" href="styles.css?v=0.12.0" />
   </head>
   <body>
     <div class="app">
@@ -166,6 +166,7 @@
         <button class="nav__button" data-route="history">Historial</button>
         <button class="nav__button" data-route="records">Records</button>
         <button class="nav__button" data-route="friends">Amigos</button>
+        <button class="nav__button" data-route="gallery">Galeria</button>
         <button class="nav__button" data-route="exercises">Biblioteca</button>
       </nav>
 
@@ -773,6 +774,34 @@
           </div>
         </section>
 
+        <section class="panel" data-view="gallery" hidden>
+          <div class="panel__header">
+            <div>
+              <h2>Galeria</h2>
+              <p class="panel__subtitle">Album visual con fecha y notas.</p>
+            </div>
+          </div>
+
+          <div class="card gallery-upload">
+            <div class="records-controls__row">
+              <div class="form__field">
+                <label class="form__label" for="galleryPhotoInput">Foto</label>
+                <input class="form__input" id="galleryPhotoInput" type="file" accept="image/*" />
+              </div>
+              <div class="form__field">
+                <label class="form__label" for="galleryNote">Nota (opcional)</label>
+                <input class="form__input" id="galleryNote" type="text" />
+              </div>
+            </div>
+            <div class="panel__actions">
+              <button class="button button--primary" id="galleryAdd">Subir foto</button>
+            </div>
+            <p class="form__error" id="galleryError"></p>
+          </div>
+
+          <div class="gallery-grid" id="galleryList"></div>
+        </section>
+
         <section class="panel" data-view="profile" hidden>
           <div class="panel__header">
             <div>
@@ -1300,6 +1329,6 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="app.js?v=0.11.6"></script>
+    <script src="app.js?v=0.12.0"></script>
   </body>
 </html>

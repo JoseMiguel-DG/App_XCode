@@ -140,6 +140,11 @@ const friendsProfileRecent = document.getElementById('friendsProfileRecent');
 const friendsRemove = document.getElementById('friendsRemove');
 const friendsBlock = document.getElementById('friendsBlock');
 const friendsWave = document.getElementById('friendsWave');
+const galleryPhotoInput = document.getElementById('galleryPhotoInput');
+const galleryNote = document.getElementById('galleryNote');
+const galleryAdd = document.getElementById('galleryAdd');
+const galleryError = document.getElementById('galleryError');
+const galleryList = document.getElementById('galleryList');
 const profileMenu = document.getElementById('profileMenu');
 const profileButton = document.getElementById('profileButton');
 const settingsButton = document.getElementById('settingsButton');
@@ -245,7 +250,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.11.6';
+const APP_VERSION = '0.12.0';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 const FRIEND_STATUS = {
   PENDING: 'pending',
@@ -359,7 +364,7 @@ const updateStatus = () => {
 
 const openDatabase = () =>
   new Promise((resolve, reject) => {
-    const request = indexedDB.open(STORAGE_DB, 4);
+    const request = indexedDB.open(STORAGE_DB, 5);
     request.onupgradeneeded = () => {
       const db = request.result;
       if (!db.objectStoreNames.contains('categories')) {
@@ -396,6 +401,10 @@ const openDatabase = () =>
         const runningStore = db.createObjectStore('runningSessions', { keyPath: 'id' });
         runningStore.createIndex('finishedAt', 'finishedAt', { unique: false });
         runningStore.createIndex('date', 'date', { unique: false });
+      }
+      if (!db.objectStoreNames.contains('progressPhotos')) {
+        const photoStore = db.createObjectStore('progressPhotos', { keyPath: 'id' });
+        photoStore.createIndex('createdAt', 'createdAt', { unique: false });
       }
       if (!db.objectStoreNames.contains('profile')) {
         db.createObjectStore('profile', { keyPath: 'id' });
@@ -944,6 +953,25 @@ const runningRepository = {
   },
 };
 
+const galleryRepository = {
+  async createPhoto(data) {
+    const photo = {
+      id: createId(),
+      imageData: data.imageData,
+      note: data.note || '',
+      createdAt: new Date().toISOString(),
+    };
+    await putInStore('progressPhotos', photo);
+    return photo;
+  },
+  async listPhotos() {
+    return getAllFromStore('progressPhotos');
+  },
+  async deletePhoto(id) {
+    await deleteFromStore('progressPhotos', id);
+  },
+};
+
 const seedData = async () => {
   if (!ENABLE_SEED) return;
   const categories = await exerciseRepository.listCategories();
@@ -1430,6 +1458,9 @@ const setView = (route) => {
   }
   if (route === 'friends') {
     renderFriendsView();
+  }
+  if (route === 'gallery') {
+    renderGallery();
   }
   if (route === 'routines') {
     routineEditor.hidden = true;
@@ -2394,6 +2425,65 @@ const sendFriendWave = async (friendId) => {
   if (error) {
     setCloudError(error.message);
   }
+};
+
+const renderGallery = async () => {
+  if (!galleryList) return;
+  const photos = await galleryRepository.listPhotos();
+  const sorted = photos.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  galleryList.innerHTML = '';
+  if (!sorted.length) {
+    const empty = document.createElement('div');
+    empty.className = 'empty-state';
+    empty.textContent = 'Aun no hay fotos.';
+    galleryList.appendChild(empty);
+    return;
+  }
+  sorted.forEach((photo) => {
+    const card = document.createElement('div');
+    card.className = 'gallery-card';
+
+    const img = document.createElement('img');
+    img.className = 'gallery-card__image';
+    img.src = photo.imageData;
+    img.alt = 'Foto progreso';
+
+    const body = document.createElement('div');
+    body.className = 'gallery-card__body';
+
+    const date = document.createElement('div');
+    date.className = 'gallery-card__date';
+    date.textContent = formatDate(photo.createdAt);
+
+    const note = document.createElement('div');
+    note.className = 'gallery-card__note';
+    note.textContent = photo.note || 'Sin nota.';
+
+    const actions = document.createElement('div');
+    actions.className = 'gallery-card__actions';
+    const remove = document.createElement('button');
+    remove.className = 'button button--ghost';
+    remove.textContent = 'Eliminar';
+    remove.addEventListener('click', async () => {
+      const ok = await confirmDialog('Eliminar esta foto?', {
+        title: 'Eliminar foto',
+        confirmText: 'Eliminar',
+        danger: true,
+      });
+      if (!ok) return;
+      await galleryRepository.deletePhoto(photo.id);
+      await renderGallery();
+    });
+    actions.appendChild(remove);
+
+    body.appendChild(date);
+    body.appendChild(note);
+    body.appendChild(actions);
+
+    card.appendChild(img);
+    card.appendChild(body);
+    galleryList.appendChild(card);
+  });
 };
 
 const setHistoryMode = (mode) => {
@@ -3937,6 +4027,30 @@ if (friendsWave) {
   });
 }
 
+if (galleryAdd) {
+  galleryAdd.addEventListener('click', async () => {
+    if (galleryError) galleryError.textContent = '';
+    const file = galleryPhotoInput?.files?.[0];
+    if (!file) {
+      if (galleryError) galleryError.textContent = 'Selecciona una foto.';
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const imageData = reader.result;
+      if (typeof imageData !== 'string') return;
+      await galleryRepository.createPhoto({
+        imageData,
+        note: galleryNote?.value.trim() || '',
+      });
+      if (galleryPhotoInput) galleryPhotoInput.value = '';
+      if (galleryNote) galleryNote.value = '';
+      await renderGallery();
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 if (historyModeGym) {
   historyModeGym.addEventListener('click', () => setHistoryMode('gym'));
 }
@@ -4146,6 +4260,7 @@ const CLOUD_STORES = [
   'trainingSessions',
   'sessionExerciseLogs',
   'runningSessions',
+  'progressPhotos',
   'profile',
 ];
 
@@ -4176,6 +4291,7 @@ const importPayload = async (parsed) => {
   await renderRecords();
   await renderRunningRecords();
   await renderRunning();
+  await renderGallery();
   await renderHomeDashboard();
 };
 
@@ -5012,6 +5128,9 @@ navButtons.forEach((button) => {
     if (route === 'friends') {
       renderFriendsView();
     }
+    if (route === 'gallery') {
+      renderGallery();
+    }
     if (profileMenu) {
       profileMenu.classList.remove('is-open');
     }
@@ -5270,6 +5389,7 @@ const startApp = async () => {
     await refreshTrainingHome();
     await renderProfile();
     await renderRunning();
+    await renderGallery();
   } catch (error) {
     console.error('No se pudo inicializar la base local.', error);
     statusBadge.textContent = 'Error de datos';
