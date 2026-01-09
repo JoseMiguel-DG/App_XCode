@@ -257,7 +257,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.13.1';
+const APP_VERSION = '0.13.2';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 const FRIEND_STATUS = {
   PENDING: 'pending',
@@ -1683,6 +1683,19 @@ const fetchFriendUserData = async (userId) => {
     return null;
   }
   return data?.data || null;
+};
+
+const hydrateProfileFromCloudIfMissing = async () => {
+  if (!supabaseClient || !cloudUser) return;
+  const localProfile = await profileRepository.getProfile();
+  if (localProfile) return;
+  const payload = await fetchFriendUserData(cloudUser.id);
+  const profileItems = payload?.data?.profile;
+  if (!Array.isArray(profileItems) || profileItems.length === 0) return;
+  const profile = profileItems.find((item) => item.id === 'profile') || profileItems[0];
+  if (!profile) return;
+  await putInStore('profile', profile);
+  await renderProfile();
 };
 
 const buildFriendStats = (payload) => {
@@ -4798,13 +4811,14 @@ const syncFromCloudIfNewer = async () => {
   if (remoteUpdatedAt && (!baseline || remoteUpdatedAt > baseline)) {
     try {
       isCloudImporting = true;
-      await importPayload(cloudPayload.data);
-      setCloudStatus('Datos descargados.', 'ok');
-      setLocalUpdatedAt(cloudPayload.updated_at);
-      setLastUploadedAt(cloudPayload.updated_at);
-      setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(cloudPayload.updated_at)}`);
-      flashSyncIndicator();
-    } catch (err) {
+    await importPayload(cloudPayload.data);
+    setCloudStatus('Datos descargados.', 'ok');
+    setLocalUpdatedAt(cloudPayload.updated_at);
+    setLastUploadedAt(cloudPayload.updated_at);
+    setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(cloudPayload.updated_at)}`);
+    flashSyncIndicator();
+    await hydrateProfileFromCloudIfMissing();
+  } catch (err) {
       setCloudError(err.message);
       setCloudStatus('Error al descargar.', 'error');
     } finally {
