@@ -257,7 +257,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.13.3';
+const APP_VERSION = '0.13.4';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 const FRIEND_STATUS = {
   PENDING: 'pending',
@@ -2081,44 +2081,49 @@ const renderHomeDashboard = async () => {
       homeNextSessionTitle.textContent = 'Rutinas de hoy';
       dayRoutines.forEach((routine) => {
         const block = document.createElement('div');
-        const title = document.createElement('div');
-        title.className = 'list__title';
-        title.textContent = routine.name;
+        block.className = 'today-session';
 
-        const details = document.createElement('details');
-        details.className = 'collapsible';
-        const summary = document.createElement('summary');
-        summary.className = 'collapsible__summary';
-        summary.textContent = 'Ver ejercicios';
-        const content = document.createElement('div');
-        content.className = 'collapsible__content';
+        const header = document.createElement('div');
+        header.className = 'today-session__header';
+        const title = document.createElement('div');
+        title.className = 'today-session__title';
+        title.textContent = routine.name;
+        const meta = document.createElement('div');
+        meta.className = 'today-session__meta';
+        meta.textContent = 'Sesion principal';
+        header.appendChild(title);
+        header.appendChild(meta);
 
         const items = routineItems
           .filter((item) => item.routineDayId === routine.id)
           .sort((a, b) => a.order - b.order);
+
+        const list = document.createElement('div');
+        list.className = 'today-session__list';
         if (items.length === 0) {
           const empty = document.createElement('div');
           empty.className = 'empty-state';
           empty.textContent = 'Sin ejercicios.';
-          content.appendChild(empty);
+          list.appendChild(empty);
         } else {
-          const list = document.createElement('div');
-          list.className = 'chip-row';
-          items.forEach((item) => {
+          items.forEach((item, index) => {
             const exercise = exerciseMap.get(item.exerciseId);
-            const chip = document.createElement('span');
-            chip.className = 'chip';
-            chip.textContent = exercise ? exercise.name : 'Ejercicio eliminado';
-            list.appendChild(chip);
+            const row = document.createElement('div');
+            row.className = 'today-session__row';
+            const number = document.createElement('span');
+            number.className = 'today-session__index';
+            number.textContent = `${index + 1}`;
+            const name = document.createElement('span');
+            name.className = 'today-session__name';
+            name.textContent = exercise ? exercise.name : 'Ejercicio eliminado';
+            row.appendChild(number);
+            row.appendChild(name);
+            list.appendChild(row);
           });
-          content.appendChild(list);
         }
 
-        details.appendChild(summary);
-        details.appendChild(content);
-
-        block.appendChild(title);
-        block.appendChild(details);
+        block.appendChild(header);
+        block.appendChild(list);
         homeNextSessionList.appendChild(block);
       });
     } else {
