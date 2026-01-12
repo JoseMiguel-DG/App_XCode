@@ -204,6 +204,7 @@ const cloudSignup = document.getElementById('cloudSignup');
 const cloudLogout = document.getElementById('cloudLogout');
 const cloudUpload = document.getElementById('cloudUpload');
 const cloudDownload = document.getElementById('cloudDownload');
+const cloudRetry = document.getElementById('cloudRetry');
 const appContainer = document.querySelector('.app');
 const homeGoTrain = document.getElementById('homeGoTrain');
 const updateToast = document.getElementById('updateToast');
@@ -260,7 +261,7 @@ const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.13.12';
+const APP_VERSION = '0.13.13';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 const FRIEND_STATUS = {
   PENDING: 'pending',
@@ -5055,6 +5056,10 @@ const setCloudStatus = (message, tone = 'idle') => {
       if (tone === 'error') dot.classList.add('is-error');
     }
   });
+  if (cloudRetry) {
+    const showRetry = isAuthenticated && (tone === 'warn' || tone === 'error');
+    cloudRetry.hidden = !showRetry;
+  }
 };
 
 const setCloudLastSync = (label) => {
@@ -5310,6 +5315,11 @@ const setCloudControls = (isAuthed) => {
   cloudLogout.hidden = !isAuthed;
   cloudUpload.hidden = !isAuthed;
   cloudDownload.hidden = !isAuthed;
+  if (cloudRetry) {
+    if (!isAuthed) {
+      cloudRetry.hidden = true;
+    }
+  }
 };
 
 const updateCloudUI = (user) => {
@@ -5753,6 +5763,19 @@ if (cloudDownload) {
     } finally {
       isCloudImporting = false;
     }
+  });
+}
+
+if (cloudRetry) {
+  cloudRetry.addEventListener('click', async (event) => {
+    event.preventDefault();
+    setCloudError('');
+    if (!supabaseClient || !cloudUser) {
+      setCloudError('Debes iniciar sesion.');
+      return;
+    }
+    setCloudStatus('Sincronizando...', 'warn');
+    await performCloudUpload();
   });
 }
 
