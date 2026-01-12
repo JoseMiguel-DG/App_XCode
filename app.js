@@ -1034,17 +1034,23 @@ const seedData = async () => {
   const categoryNames = ['Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Core', 'Trapecio'];
   const categoryMap = new Map();
   const categories = await exerciseRepository.listCategories();
-  if (categories.length === 0) {
-    for (const name of categoryNames) {
-      const created = await exerciseRepository.createCategory(name);
-      categoryMap.set(created.nameLower, created.id);
+  const addCategoryAlias = (nameLower, id) => {
+    if (!nameLower) return;
+    categoryMap.set(nameLower, id);
+    if (nameLower.endsWith('s')) {
+      categoryMap.set(nameLower.slice(0, -1), id);
     }
-  } else {
-    categories.forEach((category) => {
-      if (category?.nameLower) {
-        categoryMap.set(category.nameLower, category.id);
-      }
-    });
+  };
+  categories.forEach((category) => {
+    if (category?.nameLower) {
+      addCategoryAlias(category.nameLower, category.id);
+    }
+  });
+  for (const name of categoryNames) {
+    const lower = name.toLowerCase();
+    if (categoryMap.has(lower)) continue;
+    const created = await exerciseRepository.createCategory(name);
+    addCategoryAlias(created.nameLower, created.id);
   }
 
   const exercises = [
