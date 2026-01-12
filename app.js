@@ -253,13 +253,14 @@ const LAST_ROUTINE_DAY_KEY = 'last-routine-day-id';
 const ENABLE_SEED = true;
 const CLOUD_LOCAL_UPDATED_KEY = 'cloud-local-updated-at';
 const CLOUD_LAST_UPLOADED_KEY = 'cloud-last-uploaded-at';
+const CLOUD_USER_ID_KEY = 'cloud-user-id';
 const CLOUD_POLL_INTERVAL_MS = 2000;
 const CLOUD_SYNC_DELAY_MS = 100;
 const CLOUD_SYNC_TIMEOUT_MS = 12000;
 const CLOUD_SYNC_RETRY_MS = 5000;
 const SUPABASE_URL = 'https://dcdaddtmftmudzzjlgfz.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_o2m4nokLGDJu3Z2qIXQhog_Hq-M63B9';
-const APP_VERSION = '0.13.10';
+const APP_VERSION = '0.13.12';
 const AUTH_REDIRECT_URL = 'https://josemiguel-dg.github.io/App_XCode/';
 const FRIEND_STATUS = {
   PENDING: 'pending',
@@ -323,6 +324,7 @@ let cloudSyncPending = false;
 let isAuthenticated = false;
 let confirmResolver = null;
 let currentProfileAvatar = '';
+let shouldClearOnLogout = false;
 let friendsCache = {
   friendships: [],
   profiles: new Map(),
@@ -4821,6 +4823,39 @@ const CLOUD_STORES = [
   'profile',
 ];
 
+const getItemTimestamp = (item) => {
+  if (!item || typeof item !== 'object') return null;
+  const keys = ['updatedAt', 'createdAt', 'finishedAt', 'startedAt', 'date', 'exportedAt'];
+  let latest = null;
+  keys.forEach((key) => {
+    const value = item[key];
+    if (value == null) return;
+    const ts = typeof value === 'number' ? value : Date.parse(value);
+    if (Number.isNaN(ts)) return;
+    if (latest == null || ts > latest) {
+      latest = ts;
+    }
+  });
+  return latest;
+};
+
+const getLocalDataSummary = async () => {
+  let total = 0;
+  let latest = null;
+  for (const store of CLOUD_STORES) {
+    const items = await getAllFromStore(store);
+    total += items.length;
+    items.forEach((item) => {
+      const ts = getItemTimestamp(item);
+      if (ts == null) return;
+      if (latest == null || ts > latest) {
+        latest = ts;
+      }
+    });
+  }
+  return { total, latest };
+};
+
 const getExportPayload = async () => {
   const stores = CLOUD_STORES;
   const payload = { exportedAt: new Date().toISOString(), version: 2, data: {} };
@@ -4856,6 +4891,7 @@ const clearCloudMetadata = () => {
   localStorage.removeItem(LAST_ROUTINE_DAY_KEY);
   localStorage.removeItem(CLOUD_LOCAL_UPDATED_KEY);
   localStorage.removeItem(CLOUD_LAST_UPLOADED_KEY);
+  localStorage.removeItem(CLOUD_USER_ID_KEY);
 };
 
 const clearLocalUserData = async () => {
@@ -5178,7 +5214,8 @@ const hydrateProfileFromCloudIfMissing = async () => {
 const syncFromCloudIfNewer = async () => {
   if (!supabaseClient || !cloudUser || isCloudImporting || !cloudReady) return;
   if (hasPendingLocalChanges()) {
-    await performCloudUpload();
+    const uploaded = await performCloudUpload();
+    if (!uploaded) return;
   }
   const cloudPayload = await fetchCloudPayload();
   if (!cloudPayload) return;
@@ -5302,6 +5339,9 @@ const updateCloudUI = (user) => {
     syncProfilePublic();
     startCloudPolling();
     startCloudRealtime();
+    if (hasPendingLocalChanges()) {
+      scheduleCloudSync();
+    }
     const route = location.hash.replace('#', '') || 'home';
     setView(route === 'auth' ? 'home' : route);
   } else {
@@ -5309,7 +5349,10 @@ const updateCloudUI = (user) => {
     setCloudControls(false);
     stopCloudPolling();
     stopCloudRealtime();
-    clearLocalUserData();
+    if (shouldClearOnLogout) {
+      shouldClearOnLogout = false;
+      clearLocalUserData();
+    }
     friendsCache = { friendships: [], profiles: new Map(), notifications: [] };
     state.currentFriendId = null;
     if (profileMenu) {
@@ -5340,11 +5383,40 @@ const setLocalUpdatedAt = (value) => {
 
 const maybeAutoDownload = async (user) => {
   if (!supabaseClient || !user) return;
+  const ownerId = localStorage.getItem(CLOUD_USER_ID_KEY);
+  if (ownerId && ownerId !== user.id) {
+    await clearLocalUserData();
+  }
+  localStorage.setItem(CLOUD_USER_ID_KEY, user.id);
+  const localSummary = await getLocalDataSummary();
+  const localUpdatedAt = getLocalUpdatedAt() || localSummary.latest;
+  if (localSummary.latest && !getLocalUpdatedAt()) {
+    setLocalUpdatedAt(localSummary.latest);
+  }
   const cloudPayload = await fetchCloudPayload();
   if (!cloudPayload) {
-    await clearLocalUserData();
-    setCloudStatus('No hay datos en la nube.', 'warn');
+    if (localSummary.total > 0) {
+      const uploaded = await performCloudUpload();
+      if (uploaded) {
+        const lastUpload = getLastUploadedAt();
+        if (lastUpload) {
+          setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(lastUpload)}`);
+        }
+      }
+    } else {
+      setCloudStatus('No hay datos en la nube.', 'warn');
+    }
     return;
+  }
+  const remoteUpdatedAt = cloudPayload.updated_at ? Date.parse(cloudPayload.updated_at) : null;
+  if (localUpdatedAt && (!remoteUpdatedAt || localUpdatedAt > remoteUpdatedAt)) {
+    const uploaded = await performCloudUpload();
+    if (!uploaded) return;
+    return;
+  }
+  if (hasPendingLocalChanges()) {
+    const uploaded = await performCloudUpload();
+    if (!uploaded) return;
   }
   try {
     isCloudImporting = true;
@@ -5371,11 +5443,11 @@ const initCloudAuth = async () => {
   }
   const session = await supabaseClient.auth.getSession();
   const sessionUser = session.data.session ? session.data.session.user : null;
+  cloudReady = true;
   updateCloudUI(sessionUser);
   if (sessionUser) {
     await maybeAutoDownload(sessionUser);
   }
-  cloudReady = true;
   supabaseClient.auth.onAuthStateChange(async (_event, newSession) => {
     const user = newSession ? newSession.user : null;
     updateCloudUI(user);
@@ -5592,9 +5664,11 @@ if (cloudLogout) {
       setCloudError('Supabase no disponible.');
       return;
     }
+    shouldClearOnLogout = true;
     const { error } = await supabaseClient.auth.signOut();
     if (error) {
       setCloudError(error.message);
+      shouldClearOnLogout = false;
     }
   });
 }
@@ -5625,8 +5699,10 @@ if (cloudUpload) {
       setCloudError(error.message);
       return;
     }
+    const uploadedAt = new Date().toISOString();
+    setLastUploadedAt(uploadedAt);
     setCloudStatus('Datos subidos.', 'ok');
-    setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(new Date().toISOString())}`);
+    setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(uploadedAt)}`);
   });
 }
 
@@ -5669,6 +5745,7 @@ if (cloudDownload) {
       await importPayload(data.data);
       setCloudStatus('Datos descargados.', 'ok');
       setLocalUpdatedAt(data.updated_at);
+      setLastUploadedAt(data.updated_at);
       setCloudLastSync(`Ultima sincronizacion: ${formatDateTime(data.updated_at)}`);
     } catch (err) {
       setCloudError(err.message);
