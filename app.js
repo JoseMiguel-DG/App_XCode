@@ -1030,17 +1030,32 @@ const galleryRepository = {
 
 const seedData = async () => {
   if (!ENABLE_SEED) return;
-  const categories = await exerciseRepository.listCategories();
-  if (categories.length > 0) return;
 
   const categoryNames = ['Pecho', 'Espalda', 'Pierna', 'Hombro', 'Brazos', 'Core', 'Trapecio'];
   const categoryMap = new Map();
-  for (const name of categoryNames) {
-    const created = await exerciseRepository.createCategory(name);
-    categoryMap.set(name, created.id);
+  const categories = await exerciseRepository.listCategories();
+  if (categories.length === 0) {
+    for (const name of categoryNames) {
+      const created = await exerciseRepository.createCategory(name);
+      categoryMap.set(created.nameLower, created.id);
+    }
+  } else {
+    categories.forEach((category) => {
+      if (category?.nameLower) {
+        categoryMap.set(category.nameLower, category.id);
+      }
+    });
   }
 
   const exercises = [
+    {
+      category: 'Pecho',
+      name: 'Maquina de apertura de pecho inclinada',
+      description: 'Apertura inclinada para activar la parte superior.',
+      primaryMuscleGroup: 'Pecho',
+      equipment: 'Maquina',
+      tags: ['aislamiento'],
+    },
     {
       category: 'Pecho',
       name: 'Maquina contractora (fly)',
@@ -1083,11 +1098,43 @@ const seedData = async () => {
     },
     {
       category: 'Pecho',
+      name: 'Press inclinado en maquina',
+      description: 'Press inclinado guiado para control total.',
+      primaryMuscleGroup: 'Pecho',
+      equipment: 'Maquina',
+      tags: ['hipertrofia'],
+    },
+    {
+      category: 'Pecho',
+      name: 'Press inclinado en Smith',
+      description: 'Press inclinado con Smith para estabilidad.',
+      primaryMuscleGroup: 'Pecho',
+      equipment: 'Smith',
+      tags: ['hipertrofia'],
+    },
+    {
+      category: 'Pecho',
       name: 'Maquina de pecho horizontal',
       description: 'Maquina convergente u horizontal.',
       primaryMuscleGroup: 'Pecho',
       equipment: 'Maquina',
       tags: ['hipertrofia'],
+    },
+    {
+      category: 'Pecho',
+      name: 'Maquina de pecho convergente (angulo medio)',
+      description: 'Press en maquina con convergencia media.',
+      primaryMuscleGroup: 'Pecho',
+      equipment: 'Maquina',
+      tags: ['hipertrofia'],
+    },
+    {
+      category: 'Pecho',
+      name: 'Fly en maquina (angulo distinto)',
+      description: 'Aperturas con angulo alterno.',
+      primaryMuscleGroup: 'Pecho',
+      equipment: 'Maquina',
+      tags: ['aislamiento'],
     },
     {
       category: 'Pecho',
@@ -1104,6 +1151,14 @@ const seedData = async () => {
       primaryMuscleGroup: 'Pecho',
       equipment: 'Mancuernas',
       tags: ['aislamiento'],
+    },
+    {
+      category: 'Hombro',
+      name: 'Press militar en maquina',
+      description: 'Press guiado para empuje limpio.',
+      primaryMuscleGroup: 'Hombro',
+      equipment: 'Maquina',
+      tags: ['hipertrofia'],
     },
     {
       category: 'Hombro',
@@ -1131,10 +1186,34 @@ const seedData = async () => {
     },
     {
       category: 'Hombro',
+      name: 'Elevaciones laterales en maquina',
+      description: 'Trabajo guiado del deltoide medio.',
+      primaryMuscleGroup: 'Hombro',
+      equipment: 'Maquina',
+      tags: ['aislamiento'],
+    },
+    {
+      category: 'Hombro',
+      name: 'Elevaciones laterales en polea unilateral',
+      description: 'Tension constante en el deltoide medio.',
+      primaryMuscleGroup: 'Hombro',
+      equipment: 'Polea',
+      tags: ['aislamiento'],
+    },
+    {
+      category: 'Hombro',
       name: 'Pajaro (deltoide posterior)',
       description: 'Aislamiento del deltoide posterior.',
       primaryMuscleGroup: 'Hombro',
       equipment: 'Mancuernas',
+      tags: ['aislamiento'],
+    },
+    {
+      category: 'Hombro',
+      name: 'Reverse fly en maquina',
+      description: 'Aislamiento posterior con soporte guiado.',
+      primaryMuscleGroup: 'Hombro',
+      equipment: 'Maquina',
       tags: ['aislamiento'],
     },
     {
@@ -1144,6 +1223,14 @@ const seedData = async () => {
       primaryMuscleGroup: 'Hombro',
       equipment: 'Polea',
       tags: ['tecnica'],
+    },
+    {
+      category: 'Espalda',
+      name: 'Jalon inclinado en maquina (70 grados)',
+      description: 'Jalon convergente con angulo alto.',
+      primaryMuscleGroup: 'Espalda',
+      equipment: 'Maquina',
+      tags: ['hipertrofia'],
     },
     {
       category: 'Espalda',
@@ -1163,6 +1250,22 @@ const seedData = async () => {
     },
     {
       category: 'Espalda',
+      name: 'Jalon al pecho (agarre neutro)',
+      description: 'Tension controlada con agarre neutro.',
+      primaryMuscleGroup: 'Espalda',
+      equipment: 'Polea',
+      tags: ['hipertrofia'],
+    },
+    {
+      category: 'Espalda',
+      name: 'Jalon al pecho (agarre supino)',
+      description: 'Jalon con enfasis en dorsal y biceps.',
+      primaryMuscleGroup: 'Espalda',
+      equipment: 'Polea',
+      tags: ['hipertrofia'],
+    },
+    {
+      category: 'Espalda',
       name: 'Jalon unilateral en polea',
       description: 'Control y recorrido unilateral.',
       primaryMuscleGroup: 'Espalda',
@@ -1175,6 +1278,14 @@ const seedData = async () => {
       description: 'Remo con agarre cerrado.',
       primaryMuscleGroup: 'Espalda',
       equipment: 'Maquina',
+      tags: ['hipertrofia'],
+    },
+    {
+      category: 'Espalda',
+      name: 'Remo unilateral en polea',
+      description: 'Remo con tension constante unilateral.',
+      primaryMuscleGroup: 'Espalda',
+      equipment: 'Polea',
       tags: ['hipertrofia'],
     },
     {
@@ -1210,6 +1321,14 @@ const seedData = async () => {
       tags: ['hipertrofia'],
     },
     {
+      category: 'Espalda',
+      name: 'Remo en T con apoyo',
+      description: 'Remo en T con soporte toracico.',
+      primaryMuscleGroup: 'Espalda',
+      equipment: 'Maquina',
+      tags: ['hipertrofia'],
+    },
+    {
       category: 'Pierna',
       name: 'Sentadilla trasera',
       description: 'Movimiento compuesto para tren inferior.',
@@ -1240,6 +1359,14 @@ const seedData = async () => {
       primaryMuscleGroup: 'Pierna',
       equipment: 'Maquina',
       tags: ['hipertrofia'],
+    },
+    {
+      category: 'Pierna',
+      name: 'Extension de cuadriceps',
+      description: 'Aislamiento del cuadriceps con control.',
+      primaryMuscleGroup: 'Pierna',
+      equipment: 'Maquina',
+      tags: ['aislamiento'],
     },
     {
       category: 'Pierna',
@@ -1331,6 +1458,14 @@ const seedData = async () => {
     },
     {
       category: 'Brazos',
+      name: 'Curl predicador en maquina',
+      description: 'Curl guiado con apoyo del brazo.',
+      primaryMuscleGroup: 'Brazos',
+      equipment: 'Maquina',
+      tags: ['aislamiento'],
+    },
+    {
+      category: 'Brazos',
       name: 'Curl martillo',
       description: 'Biceps y braquial.',
       primaryMuscleGroup: 'Brazos',
@@ -1389,6 +1524,22 @@ const seedData = async () => {
       category: 'Brazos',
       name: 'Extension de triceps en polea',
       description: 'Empuje en polea alta.',
+      primaryMuscleGroup: 'Brazos',
+      equipment: 'Polea',
+      tags: ['aislamiento'],
+    },
+    {
+      category: 'Brazos',
+      name: 'Extension de triceps en polea alta',
+      description: 'Empuje en polea alta con control.',
+      primaryMuscleGroup: 'Brazos',
+      equipment: 'Polea',
+      tags: ['aislamiento'],
+    },
+    {
+      category: 'Brazos',
+      name: 'Extension de triceps en polea baja',
+      description: 'Extension desde polea baja.',
       primaryMuscleGroup: 'Brazos',
       equipment: 'Polea',
       tags: ['aislamiento'],
@@ -1459,9 +1610,23 @@ const seedData = async () => {
     },
   ];
 
+  const existingByCategory = new Map();
+  await Promise.all(
+    Array.from(categoryMap.values()).map(async (categoryId) => {
+      const list = await exerciseRepository.listExercisesByCategory(categoryId);
+      existingByCategory.set(
+        categoryId,
+        new Set(list.map((exercise) => exercise.nameLower))
+      );
+    })
+  );
+
   for (const item of exercises) {
-    const categoryId = categoryMap.get(item.category);
+    const categoryId = categoryMap.get(item.category.toLowerCase());
     if (!categoryId) continue;
+    const existingNames = existingByCategory.get(categoryId) || new Set();
+    const lowerName = item.name.trim().toLowerCase();
+    if (existingNames.has(lowerName)) continue;
     await exerciseRepository.createExercise({
       categoryId,
       name: item.name,
@@ -1470,6 +1635,8 @@ const seedData = async () => {
       equipment: item.equipment,
       tags: item.tags,
     });
+    existingNames.add(lowerName);
+    existingByCategory.set(categoryId, existingNames);
   }
 };
 
